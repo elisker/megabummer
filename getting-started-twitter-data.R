@@ -21,4 +21,5 @@ access_token_secret <- 'T3OSXcuzozq4Jd3Y6ISEJZtYJBIU8FY5PgzbUver5GotT'
 #options(RCurlOptions = list(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")))
 #download.file(url="http://curl.haxx.se/ca/cacert.pem", destfile="cacert.pem")
 #credential$handshake(cainfo="cacert.pem")
-#setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
+setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
+
