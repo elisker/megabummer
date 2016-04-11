@@ -1,5 +1,12 @@
 #https://cran.r-project.org/web/packages/twitteR/twitteR.pdf
 
+#install.packages("ROauth")
+#install.packages("streamR")
+#install.packages("devtools")
+#install.packages("rjson")
+#install.packages("bit64")
+#install.packages("httr")
+#install.packages("twitteR")
 library(ROAuth)
 library(streamR)
 library(devtools)
