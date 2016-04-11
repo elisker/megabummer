@@ -1,3 +1,4 @@
 # megabummer
 # emily's 2nd test
-# will we see a conflict????
+# Ali's first change!
+# Emily's attempt to resolve conflict
