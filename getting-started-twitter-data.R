@@ -11,14 +11,6 @@
 
 
 
-#SETTING AN .RPROFILE
-#1. Figure out what your home directory is
-path.expand("~")
-#2. File > New File > R Script
-#3. Save as .Rprofile in directory indicated in step 1.
-#4. Declare variables for your keys, etc.
-
-
 #library(ROAuth)
 #library(streamR)
 #library(devtools)
