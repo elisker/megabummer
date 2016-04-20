@@ -9,8 +9,6 @@
 #Null hyp: variation in relative freq of our chosen word is due to random chance
 #Alt: it is not due to random chance.
 
-
-
 #library(ROAuth)
 #library(streamR)
 #library(devtools)
