@@ -43,8 +43,8 @@ library(dplyr)
 setwd(dir = "/Users/eblisker/Documents/HSPH/Courses/2016 Spring/BIO 260/Final/megabummer")
 setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
 
-# searching Twitter
-tweets <- searchTwitter("megabus", n = 3000)
+# searching Twitter, English language tweets only
+tweets <- searchTwitter("megabus", n = 3000, lang="en")
 
 tweets_df <- bind_rows(lapply(tweets, as.data.frame))
 
@@ -95,6 +95,9 @@ by_word %>%
 # were identified  by manually reviewing 2900 tweets on megabus queried on 4/20/2016. Negative and positive words not already
 # included in the bing lexicon, such as those related to megabus and or transportation experience specifically, were added to the 
 # lexicon.
+
+# Notes on sentiment changes from bing: 
+# uneventful: changed from negative to positive
 
 library(tidyr)
 library(readr)
