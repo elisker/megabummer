@@ -44,7 +44,7 @@ setwd(dir = "/Users/eblisker/Documents/HSPH/Courses/2016 Spring/BIO 260/Final/me
 setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
 
 # searching Twitter, English language tweets only
-tweets <- searchTwitter("megabus", n = 3000, lang="en")
+tweets <- searchTwitter("megabus", n = 4000, lang="en")
 
 tweets_df <- bind_rows(lapply(tweets, as.data.frame))
 
