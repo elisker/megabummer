@@ -77,27 +77,45 @@ library(tidytext)
 #' \url{https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html}
 #' \url{http://www2.imm.dtu.dk/pubdb/views/publication_details.php?id=6010}
 
+# explore favorited, retweet, and retweeded counts
+table(tweets_df$favorited)
+table(tweets_df$retweeted)
+table(tweets_df$isRetweet)
+
+# explore number of tweets per user
+tweets_df %>% 
+  group_by(screenName) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) -> prolific.tweeters
+ggplot(prolific.tweeters, aes(count)) + geom_histogram(binwidth = 1) + ylab("Number of tweets per user")
+ggplot(prolific.tweeters, aes(count)) + geom_density() + ylab("Number of tweets per user")
+
+library(ggplot2)
+
 by_word <- tweets_df %>%
   filter(!isRetweet) %>%
   select(text, id, created) %>%
   unnest_tokens(word, text) 
 
-by_word %>%
+# look at most commonly tweeted words
+by_word_count <- by_word %>%
   count(word, sort = TRUE)
 
-# original code from David
+# original code from David below
 
 #bing <- sentiments %>%
 #  filter(lexicon == "bing") %>%
 #  select(-score)
 
-# Supplemented bing sentiment lexicon with megabus specific sentiment. These additional negative and positive words
-# were identified  by manually reviewing 2900 tweets on megabus queried on 4/20/2016. Negative and positive words not already
+# Supplemented bing sentiment lexicon with 57 megabus or transportation specific sentiments. These additional negative and positive words
+# were identified  by manually reviewing a random sample from 2900 tweets on megabus queried on 4/20/2016, following similar methods described 
+# here: http://www.wired.com/2015/02/best-worst-public-transit-systems-according-twitter/. Negative and positive words not already
 # included in the bing lexicon, such as those related to megabus and or transportation experience specifically, were added to the 
 # lexicon.
 
 # Notes on sentiment changes from bing: 
 # uneventful: changed from negative to positive
+# cheap: changed from negative to positive
 
 library(tidyr)
 library(readr)
@@ -114,6 +132,10 @@ megabussentiment <- by_word %>%
   count(word, sentiment) %>% 
   spread(sentiment, n, fill = 0) %>% 
   mutate(sentiment = positive - negative)
+
+# create wordcloud, resource: http://www.rdatamining.com/docs/twitter-analysis-with-r
+install.packages("wordcloud")
+library(wordcloud)
 
 # Export file as csv
 write.csv(tweets_df, file = "megabus_tweets_df_4-26.csv")
