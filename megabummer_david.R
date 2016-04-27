@@ -8,6 +8,7 @@
 #library(httr)
 library(twitteR)
 library(dplyr)
+library(ggplot2)
 
 # in .Rprofile
 # options(api_key = "BLABLABLA",
@@ -16,7 +17,7 @@ library(dplyr)
 #         access_token_secret = "BLABLABLA")
 
 # editing .Rprofile
-# file.edit(".RProfile")
+# file.edit(".Rprofile")
 
 # restart R within Rstudio 
 # .rs.restartR()
@@ -44,9 +45,43 @@ setwd(dir = "/Users/eblisker/Documents/HSPH/Courses/2016 Spring/BIO 260/Final/me
 setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
 
 # searching Twitter, English language tweets only
-tweets <- searchTwitter("megabus", n = 4000, lang="en")
+tweets <- searchTwitter("megabus", n = 3500, lang="en")
 
 tweets_df <- bind_rows(lapply(tweets, as.data.frame))
+
+# explore favorited, retweet, and retweeted counts
+table(tweets_df$favorited)
+table(tweets_df$retweeted)
+table(tweets_df$isRetweet)
+
+# filter out retweets
+tweets_df <- tweets_df %>%
+  filter(!isRetweet) %>%filter(!isRetweet)
+
+# add date and time
+tweets_df$date <- format(tweets_df$created, format="%Y-%m-%d")
+tweets_df$time <- format(tweets_df$created, format="%H:%M:%S") # need to look into time zone issues if any
+
+# make table of number of tweets per day
+table(tweets_df$date)
+
+# explore number of tweets per user
+prolific.tweeters <- tweets_df %>% 
+  group_by(screenName) %>%
+  summarise(tweets = n()) %>%
+  arrange(desc(tweets)) 
+
+# Histogram of number of tweets
+ggplot(filter(prolific.tweeters, tweets>0), aes(tweets)) + 
+  geom_histogram(binwidth = 1) + ylab("Number of tweets per user")
+
+# Plot the frequency of tweets over time in two hour windows
+# Modified from http://michaelbommarito.com/2011/03/12/a-quick-look-at-march11-saudi-tweets/
+minutes <- 120
+ggplot(data=tweets_df, aes(x=created)) + 
+  geom_histogram(aes(fill=..count..), binwidth=60*minutes) + 
+  scale_x_datetime("Date") + 
+  scale_y_continuous("Frequency") +
 
 library(devtools)
 # install_github("juliasilge/tidytext")
@@ -77,30 +112,6 @@ library(tidytext)
 #' \url{https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html}
 #' \url{http://www2.imm.dtu.dk/pubdb/views/publication_details.php?id=6010}
 
-# explore favorited, retweet, and retweeded counts
-table(tweets_df$favorited)
-table(tweets_df$retweeted)
-table(tweets_df$isRetweet)
-
-# explore number of tweets per user
-tweets_df %>% 
-  group_by(screenName) %>%
-  summarise(count = n()) %>%
-  arrange(desc(count)) -> prolific.tweeters
-ggplot(prolific.tweeters, aes(count)) + geom_histogram(binwidth = 1) + ylab("Number of tweets per user")
-ggplot(prolific.tweeters, aes(count)) + geom_density() + ylab("Number of tweets per user")
-
-library(ggplot2)
-
-by_word <- tweets_df %>%
-  filter(!isRetweet) %>%
-  select(text, id, created) %>%
-  unnest_tokens(word, text) 
-
-# look at most commonly tweeted words
-by_word_count <- by_word %>%
-  count(word, sort = TRUE)
-
 # original code from David below
 
 #bing <- sentiments %>%
@@ -119,6 +130,15 @@ by_word_count <- by_word %>%
 
 library(tidyr)
 library(readr)
+
+by_word <- tweets_df %>%
+  select(text, id, created) %>%
+  unnest_tokens(word, text) 
+
+# look at most commonly tweeted words
+by_word_count <- by_word %>%
+  count(word, sort = TRUE)
+
 megabus_lexicon <- read_csv("megabus_lexicon.csv")
 
 # create new dataframe of bing and megabummer sentiments
