@@ -75,6 +75,8 @@ prolific.tweeters <- tweets_df %>%
   summarise(tweets = n()) %>%
   arrange(desc(tweets)) 
 
+## NEED TO filter out tweets from @megabus and other non civillian users
+
 # Histogram of number of tweets
 ggplot(filter(prolific.tweeters, tweets>0), aes(tweets)) + 
   geom_histogram(binwidth = 1) + ylab("Number of tweets per user")
@@ -90,7 +92,7 @@ ggplot(data=tweets_df, aes(x=created)) +
 # really clunky look at tweets over 24 hour period
 tweets_df$time <- as.POSIXct(tweets_df$time, format="%H:%M:%S")
 brks <- trunc(range(tweets_df$time), "hours")
-hist(tweets_df$time, breaks=seq(brks[1], brks[2]+3600, by="30 min") )
+hist(tweets_df$time, breaks=seq(brks[1], brks[2]+3600, by="30 min"))
 
 ###### SENTIMENT ANALYSIS ######
 
@@ -143,7 +145,7 @@ library(tidyr)
 library(readr)
 
 by_word <- tweets_df %>%
-  select(text, id, created) %>%
+  select(text, id, created, date, time) %>%
   unnest_tokens(word, text) 
 
 # look at most commonly tweeted words
@@ -173,6 +175,8 @@ positives = bing_megabus %>%
 negatives = bing_megabus %>%
   filter(sentiment == "negative") %>%
   select(word)
+
+## gganimate: by day (e.g., mondays)
 
 # try using this resource to display avg sentiment score of tweets over time: 
 # https://www.credera.com/blog/technology-insights/open-source-technology-insights/twitter-analytics-using-r-part-3-compare-sentiments/
