@@ -44,10 +44,14 @@ library(ggplot2)
 setwd(dir = "/Users/eblisker/Documents/HSPH/Courses/2016 Spring/BIO 260/Final/megabummer")
 setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
 
+#### SEARCH TWITTER ####
+
 # searching Twitter, English language tweets only
 tweets <- searchTwitter("megabus", n = 3500, lang="en")
 
 tweets_df <- bind_rows(lapply(tweets, as.data.frame))
+
+#### DATA CLEANING ANDEXPLORATORY ANALYSIS ####
 
 # explore favorited, retweet, and retweeted counts
 table(tweets_df$favorited)
@@ -60,7 +64,7 @@ tweets_df <- tweets_df %>%
 
 # add date and time
 tweets_df$date <- format(tweets_df$created, format="%Y-%m-%d")
-tweets_df$time <- format(tweets_df$created, format="%H:%M:%S") # need to look into time zone issues if any
+tweets_df$time <- format(tweets_df$created, format="%H:%M:%S") # NEED TO look into time zone issues if any
 
 # make table of number of tweets per day
 table(tweets_df$date)
@@ -81,7 +85,14 @@ minutes <- 120
 ggplot(data=tweets_df, aes(x=created)) + 
   geom_histogram(aes(fill=..count..), binwidth=60*minutes) + 
   scale_x_datetime("Date") + 
-  scale_y_continuous("Frequency") +
+  scale_y_continuous("Frequency")
+
+# really clunky look at tweets over 24 hour period
+tweets_df$time <- as.POSIXct(tweets_df$time, format="%H:%M:%S")
+brks <- trunc(range(tweets_df$time), "hours")
+hist(tweets_df$time, breaks=seq(brks[1], brks[2]+3600, by="30 min") )
+
+###### SENTIMENT ANALYSIS ######
 
 library(devtools)
 # install_github("juliasilge/tidytext")
@@ -151,10 +162,22 @@ megabussentiment <- by_word %>%
   inner_join(bing_megabus) %>% 
   count(word, sentiment) %>% 
   spread(sentiment, n, fill = 0) %>% 
-  mutate(sentiment = positive - negative)
+  mutate(score = positive - negative)
+
+# trying out a new type of sentiment analysis based on this http://www.r-bloggers.com/sentiment-analysis-on-donald-trump-using-r-and-tableau/
+# NEED TO FINISH: http://www.r-bloggers.com/sentiment-analysis-on-donald-trump-using-r-and-tableau/
+positives = bing_megabus %>%
+  filter(sentiment == "positive") %>%
+  select(word)
+
+negatives = bing_megabus %>%
+  filter(sentiment == "negative") %>%
+  select(word)
+
+# try using this resource to display avg sentiment score of tweets over time: 
+# https://www.credera.com/blog/technology-insights/open-source-technology-insights/twitter-analytics-using-r-part-3-compare-sentiments/
 
 # create wordcloud, resource: http://www.rdatamining.com/docs/twitter-analysis-with-r
-install.packages("wordcloud")
 library(wordcloud)
 
 # Export file as csv
