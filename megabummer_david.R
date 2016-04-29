@@ -44,33 +44,43 @@ library(ggplot2)
 setwd(dir = "/Users/eblisker/Documents/HSPH/Courses/2016 Spring/BIO 260/Final/megabummer")
 setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
 
-#### SEARCH TWITTER ####
+#### SEARCH TWITTER AND SAVE ####
 
 # searching Twitter, English language tweets only
 tweets <- searchTwitter("megabus", n = 3500, lang="en")
 
 tweets_df <- bind_rows(lapply(tweets, as.data.frame))
 
-#### DATA CLEANING AND EXPLORATORY ANALYSIS ####
-
-# explore favorited, retweet, and retweeted counts
-table(tweets_df$favorited)
-table(tweets_df$retweeted)
-table(tweets_df$isRetweet)
-
-# filter out retweets
-tweets_df <- tweets_df %>%
-  filter(!isRetweet) %>%filter(!isRetweet)
-
 # add date and time
 tweets_df$date <- format(tweets_df$created, format="%Y-%m-%d")
 tweets_df$time <- format(tweets_df$created, format="%H:%M:%S") # NEED TO look into time zone issues if any
 
+# Export tweet pull as csv
+write.csv(tweets_df, file = "megabus_tweets_df_4-29.csv")
+
+#### DATA CLEANING AND EXPLORATORY ANALYSIS ####
+
+# load older tweets and merge datasets
+tweets_df_4_26 <- read.csv("megabus_tweets_df_4-26.csv")
+tweets_df_4_27 <- read.csv("megabus_tweets_df_4-27.csv")
+tweets_df_4_29 <- read.csv("megabus_tweets_df_4-29.csv")
+
+tweets_df_all <- rbind(tweets_df_4_26, tweets_df_4_27, tweets_df_4_29)
+
+# explore favorited, retweet, and retweeted counts
+table(tweets_df_all$favorited)
+table(tweets_df_all$retweeted)
+table(tweets_df_all$isRetweet)
+
+# filter out retweets
+tweets_df_all <- tweets_df_all %>%
+  filter(!isRetweet) %>%filter(!isRetweet)
+
 # make table of number of tweets per day
-table(tweets_df$date)
+table(tweets_df_all$date)
 
 # explore number of tweets per user
-prolific.tweeters <- tweets_df %>% 
+prolific.tweeters <- tweets_df_all %>% 
   group_by(screenName) %>%
   summarise(tweets = n()) %>%
   arrange(desc(tweets)) 
@@ -84,15 +94,15 @@ ggplot(filter(prolific.tweeters, tweets>0), aes(tweets)) +
 # Plot the frequency of tweets over time in two hour windows
 # Modified from http://michaelbommarito.com/2011/03/12/a-quick-look-at-march11-saudi-tweets/
 minutes <- 120
-ggplot(data=tweets_df, aes(x=created)) + 
+ggplot(data=tweets_df_all, aes(x=created)) + 
   geom_histogram(aes(fill=..count..), binwidth=60*minutes) + 
   scale_x_datetime("Date") + 
   scale_y_continuous("Frequency")
 
 # really clunky look at tweets over 24 hour period
-tweets_df$time <- as.POSIXct(tweets_df$time, format="%H:%M:%S")
-brks <- trunc(range(tweets_df$time), "hours")
-hist(tweets_df$time, breaks=seq(brks[1], brks[2]+3600, by="30 min"))
+tweets_df_all$time <- as.POSIXct(tweets_df_all$time, format="%H:%M:%S")
+brks <- trunc(range(tweets_df_all$time), "hours")
+hist(tweets_df_all$time, breaks=seq(brks[1], brks[2]+3600, by="30 min"))
 
 ###### SENTIMENT ANALYSIS ######
 
@@ -144,7 +154,7 @@ library(tidytext)
 library(tidyr)
 library(readr)
 
-by_word <- tweets_df %>%
+by_word <- tweets_df_all %>%
   select(text, id, created, date, time) %>%
   unnest_tokens(word, text) 
 
@@ -183,7 +193,3 @@ negatives = bing_megabus %>%
 
 # create wordcloud, resource: http://www.rdatamining.com/docs/twitter-analysis-with-r
 library(wordcloud)
-
-# Export file as csv
-write.csv(tweets_df, file = "megabus_tweets_df_4-27.csv")
-write.csv(by_word, file = "megabus_by_word_4-27.csv")
