@@ -9,6 +9,7 @@
 library(twitteR)
 library(dplyr)
 library(ggplot2)
+library(ggthemes)
 
 # in .Rprofile
 # options(api_key = "BLABLABLA",
@@ -48,24 +49,25 @@ setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
 
 # searching Twitter, English language tweets only
 tweets <- searchTwitter("megabus", n = 3500, lang="en")
-
-# add date and time
-tweets_df_4_26$created <- as.POSIXct(tweets_df_4_26$created, format="%m/%d/%y %H:%M")
-tweets_df_4_26$date <- format(tweets_df_4_26$created, format="%m/%d/%y")
-tweets_df_4_26$time <- format(tweets_df_4_26$created, format="%H:%M") # NEED TO look into time zone issues if any
+tweets_df <- bind_rows(lapply(tweets, as.data.frame))
 
 # Export tweet pull as csv
-write.csv(tweets_df_4_26, file = "tweets_df_all.csv")
+# write.csv(tweets_df_date, file = "tweets_df_date.csv") 
 
 #### DATA CLEANING AND EXPLORATORY ANALYSIS ####
 
 # load older tweets and merge datasets
 options(digits = 22) # to prevent tweet id from truncating
-tweets_df_4_26 <- read.csv("megabus_tweets_df_4-26.csv")
-tweets_df_4_27 <- read.csv("megabus_tweets_df_4-27.csv")
-tweets_df_4_29 <- read.csv("megabus_tweets_df_4-29.csv")
+tweets_df_4_26 <- read_csv("megabus_tweets_df_4-26.csv")
+tweets_df_4_27 <- read_csv("megabus_tweets_df_4-27.csv")
+tweets_df_4_29 <- read_csv("megabus_tweets_df_4-29.csv")
 
 tweets_df_all <- rbind(tweets_df_4_26, tweets_df_4_27, tweets_df_4_29)
+tweets_df_all[,1] <- NULL # remove extra column
+
+tweets_df_all$created <- as.POSIXct(tweets_df_all$created, format= "%m/%d/%y %H:%M")
+tweets_df_all$date <- format(tweets_df_all$created, format="%m-%d-%y")
+tweets_df_all$time <- format(tweets_df_all$created, format="%H:%M:%S") 
 
 # explore favorited, retweet, and retweeted counts
 table(tweets_df_all$favorited)
@@ -101,7 +103,7 @@ prolific_tweeters <- tweets_df_all %>%
 
 # Histogram of number of tweets
 ggplot(filter(prolific_tweeters, tweets>0), aes(tweets)) + 
-  geom_histogram(binwidth = 1) + ylab("Number of tweets per user")
+  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Frequency") + theme_hc()
 
 # Plot the frequency of tweets over time in two hour windows
 # Modified from http://michaelbommarito.com/2011/03/12/a-quick-look-at-march11-saudi-tweets/
@@ -196,10 +198,11 @@ mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, creat
 library(Hmisc)
 describe(mb_sentiment_tweet)
 
-# graph sentiment score over time (NEED TO FIX DATES)
-ggplot(data=mb_sentiment_tweet, aes(x=date, y=score_tweet)) + 
+# graph sentiment score over time 
+ggplot(data=mb_sentiment_tweet, aes(x=created, y=score_tweet)) + 
   geom_line()
 
+# histogram of sentiment scores
 ggplot(data=mb_sentiment_tweet, aes(score_tweet)) + 
   geom_histogram(binwidth = 1)
 
