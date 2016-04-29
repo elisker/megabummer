@@ -206,6 +206,33 @@ ggplot(data=mb_sentiment_tweet, aes(x=created, y=score_tweet)) +
 ggplot(data=mb_sentiment_tweet, aes(score_tweet)) + 
   geom_histogram(binwidth = 1)
 
+# average the sentiment score over 2 hour periods
+ggplot(data=mb_sentiment_tweet, aes(x=time, y=score_tweet)) + 
+  geom_line()
+
+ggplot(data=mb_sentiment_tweet, aes(x=time, y=score_tweet)) + 
+  geom_box()
+
+# boxplots and violine plotsof sentiment by date
+ggplot(mb_sentiment_tweet, aes(x=date, y=score_tweet, group=date)) +
+  geom_boxplot(aes(fill=date)) +
+  geom_jitter(colour="gray40",
+              position=position_jitter(width=0.2), alpha=0.3) 
+
+ggplot(mb_sentiment_tweet, aes(x=date, y=score_tweet, group=date)) +
+  geom_violin(aes(fill=date)) +
+  geom_jitter(colour="gray40",
+              position=position_jitter(width=0.2), alpha=0.3) 
+
+# bar chart of average score (NEED to fix y axis scale)
+meanscore <- tapply(mb_sentiment_tweet$score_tweet, mb_sentiment_tweet$date, mean)
+df = data.frame(day=names(meanscore), meanscore=meanscore)
+df$day <- reorder(df$day, df$meanscore)
+
+ggplot(df, aes(x=day, y=meanscore)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous("Frequency")
+  
 # create new dataframe calculating megabus sentiment Remove below?
 #megabussentiment_overall <- by_word %>%
 #  inner_join(bing_megabus) %>% 
