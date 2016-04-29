@@ -76,6 +76,10 @@ table(tweets_df_all$isRetweet)
 tweets_df_all <- tweets_df_all %>%
   filter(!isRetweet) %>%filter(!isRetweet)
 
+# filter out duplicates
+tweets_df_all <- tweets_df_all %>%
+  distinct(id)
+
 # make table of number of tweets per day
 table(tweets_df_all$date)
 
