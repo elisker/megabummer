@@ -49,18 +49,18 @@ setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
 # searching Twitter, English language tweets only
 tweets <- searchTwitter("megabus", n = 3500, lang="en")
 
-tweets_df <- bind_rows(lapply(tweets, as.data.frame))
-
 # add date and time
-tweets_df$date <- format(tweets_df$created, format="%Y-%m-%d")
-tweets_df$time <- format(tweets_df$created, format="%H:%M:%S") # NEED TO look into time zone issues if any
+tweets_df_4_26$created <- as.POSIXct(tweets_df_4_26$created, format="%m/%d/%y %H:%M")
+tweets_df_4_26$date <- format(tweets_df_4_26$created, format="%m/%d/%y")
+tweets_df_4_26$time <- format(tweets_df_4_26$created, format="%H:%M") # NEED TO look into time zone issues if any
 
 # Export tweet pull as csv
-write.csv(tweets_df, file = "megabus_tweets_df_4-29.csv")
+write.csv(tweets_df_4_26, file = "tweets_df_all.csv")
 
 #### DATA CLEANING AND EXPLORATORY ANALYSIS ####
 
 # load older tweets and merge datasets
+options(digits = 22) # to prevent tweet id from truncating
 tweets_df_4_26 <- read.csv("megabus_tweets_df_4-26.csv")
 tweets_df_4_27 <- read.csv("megabus_tweets_df_4-27.csv")
 tweets_df_4_29 <- read.csv("megabus_tweets_df_4-29.csv")
@@ -162,6 +162,7 @@ library(tidytext)
 # Notes on sentiment changes from bing: 
 # uneventful: changed from negative to positive
 # cheap: changed from negative to positive
+# like: removed
 
 library(tidyr)
 library(readr)
@@ -181,14 +182,34 @@ bing_megabus <- megabus_lexicon %>%
   filter(lexicon %in% c("bing","megabummer")) %>%
   select(-score)
 
-# create new dataframe calculating megabus sentiment
-megabussentiment <- by_word %>%
-  inner_join(bing_megabus) %>% 
-  count(word, sentiment) %>% 
-  spread(sentiment, n, fill = 0) %>% 
-  mutate(score = positive - negative)
+# join tweets with sentiment and add score column
+mb_sentiment <- by_word %>%
+  inner_join(bing_megabus) %>%
+  mutate(score = ifelse(sentiment == "positive", 1, -1))
 
-# trying out a new type of sentiment analysis based on this http://www.r-bloggers.com/sentiment-analysis-on-donald-trump-using-r-and-tableau/
+# calculate score for each tweet
+library(data.table)
+dt <- data.table(mb_sentiment)
+mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, created, date, time), by = c("id")] )
+
+# summary stats
+library(Hmisc)
+describe(mb_sentiment_tweet)
+
+# graph sentiment score over time (NEED TO FIX DATES)
+ggplot(data=mb_sentiment_tweet, aes(x=date, y=score_tweet)) + 
+  geom_line()
+
+ggplot(data=mb_sentiment_tweet, aes(score_tweet)) + 
+  geom_histogram(binwidth = 1)
+
+# create new dataframe calculating megabus sentiment Remove below?
+#megabussentiment_overall <- by_word %>%
+#  inner_join(bing_megabus) %>% 
+#  count(word, sentiment) %>% 
+#  spread(sentiment, n, fill = 0) %>% 
+#  mutate(score = positive - negative)
+
 # NEED TO FINISH: http://www.r-bloggers.com/sentiment-analysis-on-donald-trump-using-r-and-tableau/
 positives = bing_megabus %>%
   filter(sentiment == "positive") %>%
