@@ -51,7 +51,7 @@ tweets <- searchTwitter("megabus", n = 3500, lang="en")
 
 tweets_df <- bind_rows(lapply(tweets, as.data.frame))
 
-#### DATA CLEANING ANDEXPLORATORY ANALYSIS ####
+#### DATA CLEANING AND EXPLORATORY ANALYSIS ####
 
 # explore favorited, retweet, and retweeted counts
 table(tweets_df$favorited)
@@ -75,7 +75,7 @@ prolific.tweeters <- tweets_df %>%
   summarise(tweets = n()) %>%
   arrange(desc(tweets)) 
 
-## NEED TO filter out tweets from @megabus and other non civillian users
+## NEED TO filter out tweets from @megabus and other non civilian users
 
 # Histogram of number of tweets
 ggplot(filter(prolific.tweeters, tweets>0), aes(tweets)) + 
@@ -185,5 +185,5 @@ negatives = bing_megabus %>%
 library(wordcloud)
 
 # Export file as csv
-write.csv(tweets_df, file = "megabus_tweets_df_4-26.csv")
-write.csv(by_word, file = "megabus_by_word_4-26.csv")
+write.csv(tweets_df, file = "megabus_tweets_df_4-27.csv")
+write.csv(by_word, file = "megabus_by_word_4-27.csv")
