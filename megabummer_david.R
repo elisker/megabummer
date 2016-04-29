@@ -74,7 +74,8 @@ table(tweets_df_all$isRetweet)
 
 # filter out retweets
 tweets_df_all <- tweets_df_all %>%
-  filter(!isRetweet) %>%filter(!isRetweet)
+  filter(!isRetweet) %>%
+  filter(!isRetweet)
 
 # filter out duplicates
 tweets_df_all <- tweets_df_all %>%
@@ -83,16 +84,23 @@ tweets_df_all <- tweets_df_all %>%
 # make table of number of tweets per day
 table(tweets_df_all$date)
 
-# explore number of tweets per user
-prolific.tweeters <- tweets_df_all %>% 
+# explore number of tweets per user including megabus handles
+prolific_tweeters_all <- tweets_df_all %>% 
   group_by(screenName) %>%
   summarise(tweets = n()) %>%
   arrange(desc(tweets)) 
 
-## NEED TO filter out tweets from @megabus and other non civilian users
+# filter out tweets from megabus operators
+tweets_df_all = tweets_df_all[!grepl("megabus|megabusuk|MegabusHelp|megabusit|megabusde|megabusGold", tweets_df_all$screenName),]
+
+# explore number of tweets per user excluding megabus handles
+prolific_tweeters <- tweets_df_all %>% 
+  group_by(screenName) %>%
+  summarise(tweets = n()) %>%
+  arrange(desc(tweets)) 
 
 # Histogram of number of tweets
-ggplot(filter(prolific.tweeters, tweets>0), aes(tweets)) + 
+ggplot(filter(prolific_tweeters, tweets>0), aes(tweets)) + 
   geom_histogram(binwidth = 1) + ylab("Number of tweets per user")
 
 # Plot the frequency of tweets over time in two hour windows
