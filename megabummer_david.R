@@ -10,7 +10,7 @@ library(twitteR)
 library(dplyr)
 library(ggplot2)
 
-# in .Rprofile
+#in .Rprofile
 # options(api_key = "BLABLABLA",
 #         api_secret = "BLABLABLA",
 #         access_token = "BLABLABLA",
@@ -95,7 +95,7 @@ hist(tweets_df$time, breaks=seq(brks[1], brks[2]+3600, by="30 min") )
 ###### SENTIMENT ANALYSIS ######
 
 library(devtools)
-# install_github("juliasilge/tidytext")
+#install_github("juliasilge/tidytext")
 library(tidytext)
 # other text mining: tm, quanteda
 
@@ -150,6 +150,9 @@ by_word <- tweets_df %>%
 by_word_count <- by_word %>%
   count(word, sort = TRUE)
 
+#Ali's Directory
+#setwd(dir = "/Users/ablajda/desktop/DataScience/megabummer")
+
 megabus_lexicon <- read_csv("megabus_lexicon.csv")
 
 # create new dataframe of bing and megabummer sentiments
@@ -178,7 +181,113 @@ negatives = bing_megabus %>%
 # https://www.credera.com/blog/technology-insights/open-source-technology-insights/twitter-analytics-using-r-part-3-compare-sentiments/
 
 # create wordcloud, resource: http://www.rdatamining.com/docs/twitter-analysis-with-r
+install.packages("wordcloud")
+install.packages("tm")
+install.packages("SnowballC")
+install.packages("RColorBrewer") # color palettes
+
+library(tm)
+library(SnowballC)
 library(wordcloud)
+library(RColorBrewer)
+
+View(by_word)
+word_list <- by_word %>% select(word)
+
+word_list_negatives <- subset(word_list, word %in% negatives$word)
+View(word_list_negatives)
+
+word_list_positives <- subset(word_list, word %in% positives$word)
+View(word_list_positives)
+
+# 5 Easy Steps to a Word Cloud: http://www.sthda.com/english/wiki/text-mining-and-word-cloud-fundamentals-in-r-5-simple-steps-you-should-know#the-five-main-steps-for-creating-a-word-cloud-using-r-software
+
+# Negative Word Cloud
+word_list_negatives <- Corpus(VectorSource(word_list_negatives))
+inspect(word_list_negatives)
+
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_negatives <- tm_map(word_list_negatives, toSpace, "/")
+word_list_negatives <- tm_map(word_list_negatives, toSpace, "@")
+word_list_negatives <- tm_map(word_list_negatives, toSpace, "\\|")
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_negatives)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 10)
+
+# Word Cloud (Negative)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+##### Positive Word Cloud #####
+word_list_positives <- Corpus(VectorSource(word_list_positives))
+inspect(word_list_positives)
+
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_positives <- tm_map(word_list_positives, toSpace, "/")
+word_list_positives <- tm_map(word_list_positives, toSpace, "@")
+word_list_positives <- tm_map(word_list_positives, toSpace, "\\|")
+word_list_positives <- tm_map(word_list_positives, removeWords, c("megabus", "the", "and", "https", "you", "t.co", "for", "this", "bus", "that")) 
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_positives)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 10)
+
+# Word Cloud (Positive)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+####### END WORD CLOUD #######
+
+# Word Clouds by Date
+View(by_word)
+
+# gganimate setup
+.rs.restartR()
+
+# Load gganimate
+devtools::install_github("dgrtwo/gganimate")
+
+library(gapminder)
+library(ggplot2)
+theme_set(theme_bw())
+
+View(gapminder)
+
+p <- ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, color = continent, frame = year)) +
+  geom_point() +
+  scale_x_log10()
+
+library(gganimate)
+
+gg_animate(p)
+
+
+
+m <- as.matrix(word_list)
+# calculate the frequency of words and sort it by frequency
+word.freq <- sort(rowSums(m), decreasing = T)
+# colors
+pal <- brewer.pal(9, "BuGn")[-(1:4)]
+
+m <- as.matrix(tdm)
+# calculate the frequency of words and sort it by frequency
+word.freq <- sort(rowSums(m), decreasing = T)
+# colors
+pal <- brewer.pal(9, "BuGn")[-(1:4)]
+#plotting the wordcloud
+wordcloud(words = names(word.freq), freq = word.freq, min.freq = 3,
+          random.order = F, colors = pal)
 
 # Export file as csv
 write.csv(tweets_df, file = "megabus_tweets_df_4-26.csv")
