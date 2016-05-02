@@ -212,10 +212,6 @@ by_word <- tweets_df_all %>%
 by_word_count <- by_word %>%
   count(word, sort = TRUE)
 
-
-#Ali's Directory
-setwd(dir = "/Users/ablajda/desktop/DataScience/megabummer")
-
 megabus_lexicon <- read_csv("megabus_lexicon.csv")
 
 # create new dataframe of bing and megabummer sentiments
@@ -229,61 +225,110 @@ mb_sentiment <- by_word %>%
   mutate(score = ifelse(sentiment == "positive", 1, -1))
 
 # calculate score for each tweet
-install.packages("data.table")
 library(data.table)
 dt <- data.table(mb_sentiment)
-mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, created, date, time), by = c("id")] )
-mb_sentiment_tweet_April <- unique(dt[,list(score_tweet = sum(score), freq = .N, date), by = c("id")] )
-
+mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, date, weekend_binary, date2, time), by = c("id")] )
+mb_sentiment_tweet <- mb_sentiment_tweet %>% filter(date2 != "12-31-14")
 # summary stats
 library(Hmisc)
+#mb_sentiment_tweet %>% filter(score_tweet == 4)
+#tweets_df_all %>% filter(id==574126622481211392) %>% select(text)
 describe(mb_sentiment_tweet)
-describe(mb_sentiment_tweet_April)
 
 # graph sentiment score over time 
-ggplot(data=mb_sentiment_tweet, aes(x=created, y=score_tweet)) + 
+ggplot(data=mb_sentiment_tweet, aes(x=date2, y=score_tweet)) + 
   geom_line()
-ggplot(data=mb_sentiment_tweet_April, aes(x=date, y=score_tweet)) + 
-  geom_line()
+
 
 # histogram of sentiment scores
 ggplot(data=mb_sentiment_tweet, aes(score_tweet)) + 
   geom_histogram(binwidth = 1)
-ggplot(data=mb_sentiment_tweet_April, aes(score_tweet)) + 
-  geom_histogram(binwidth = 1)
 
 # average the sentiment score over 2 hour periods
-ggplot(data=mb_sentiment_tweet, aes(x=time, y=score_tweet)) + 
-  geom_line()
+#ggplot(data=mb_sentiment_tweet, aes(x=time, y=score_tweet)) + 
+#  geom_line()
 
-ggplot(data=mb_sentiment_tweet, aes(x=time, y=score_tweet)) + 
-  geom_box()#does this work? I had to write geom_boxplot()
+#ggplot(data=mb_sentiment_tweet, aes(x=time, y=score_tweet)) + 
+#  geom_box()#does this work? I had to write geom_boxplot()
 
-ggplot(data=mb_sentiment_tweet_April, aes(x=date, y=score_tweet)) + 
-  geom_line()
-
-ggplot(data=mb_sentiment_tweet_April, aes(x=date, y=score_tweet)) + 
-  geom_boxplot()
 
 # boxplots and violine plotsof sentiment by date
-ggplot(mb_sentiment_tweet, aes(x=date, y=score_tweet, group=date)) +
-  geom_boxplot(aes(fill=date)) +
-  geom_jitter(colour="gray40",
-              position=position_jitter(width=0.2), alpha=0.3) 
-
-ggplot(mb_sentiment_tweet, aes(x=date, y=score_tweet, group=date)) +
-  geom_violin(aes(fill=date)) +
+ggplot(mb_sentiment_tweet, aes(x=weekend_binary, y=score_tweet, group=weekend_binary)) +
+  geom_boxplot(aes(fill=weekend_binary)) +
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
 
 # bar chart of average score (NEED to fix y axis scale)
-meanscore <- tapply(mb_sentiment_tweet$score_tweet, mb_sentiment_tweet$date, mean)
+meanscore <- tapply(mb_sentiment_tweet$score_tweet, mb_sentiment_tweet$date2, mean)
 df = data.frame(day=names(meanscore), meanscore=meanscore)
 df$day <- reorder(df$day, df$meanscore)
-
 ggplot(df, aes(x=day, y=meanscore)) +
   geom_bar(stat = "identity") +
   scale_y_continuous("Frequency")
+
+
+#H0 #1: sentiment weekend = sentiment weekday = ~-0.29
+the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 1)
+not_the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 0)
+var.test(the_weekend$score_tweet,not_the_weekend$score_tweet)
+t.test(the_weekend$score_tweet,not_the_weekend$score_tweet,var.equal = TRUE)
+#H0 #2: tweet volume weekend = tweet volume weekday
+the_weekend_vol <- the_weekend %>% group_by(date2) %>% count(date2)
+not_the_weekend_vol <- not_the_weekend %>% group_by(date2) %>% count(date2)
+var.test(the_weekend_vol$n,not_the_weekend_vol$n)
+t.test(the_weekend_vol$n,not_the_weekend_vol$n)
+#H0 #4: tweet sentiment on low volume days = tweet sentiment on high volume days
+mb_sentiment_tweet_vol <- mb_sentiment_tweet %>% group_by(date2) %>% count(date2)
+tweet_quartiles <- mb_sentiment_tweet_vol%>%
+  summarise(`25%`=quantile(n, probs=0.25),
+            `50%`=quantile(n, probs=0.5),
+            `75%`=quantile(n, probs=0.75),
+            avg=mean(n),
+            n=n())
+first_quartile <- tweet_quartiles[1][[1]]
+second_quartile <- tweet_quartiles[1][[2]]
+third_quartile <- tweet_quartiles[1][[3]]
+mb_sentiment_tweet_vol$quartile <- 1
+for(i in 1:nrow(mb_sentiment_tweet_vol)) {
+  if(mb_sentiment_tweet_vol$n[i]>=third_quartile) {
+    mb_sentiment_tweet_vol$quartile[i] <- 4
+  } else if(mb_sentiment_tweet_vol$n[i]>second_quartile) {
+    mb_sentiment_tweet_vol$quartile[i] <- 3
+  } else if(mb_sentiment_tweet_vol$n[i]>first_quartile) {
+    mb_sentiment_tweet_vol$quartile[i] <- 2
+  } else {
+    mb_sentiment_tweet_vol$quartile[i] <- 1
+  }
+}
+mb_sentiment_tweet_quartiles <- left_join(mb_sentiment_tweet,mb_sentiment_tweet_vol,by="date2") %>% select(-n)
+mb_sentiment_tweet_quartiles$quartile = factor(mb_sentiment_tweet_quartiles$quartile)
+
+ggplot(mb_sentiment_tweet_quartiles, aes(x=quartile, y = score_tweet)) +
+  geom_boxplot(fill = "grey80", colour = "blue") +
+  scale_x_discrete() + xlab("Quartile") +
+  ylab("Tweet score")
+tweet_volume_model <- lm(score_tweet ~ quartile, data = mb_sentiment_tweet_quartiles)
+summary(tweet_volume_model)
+
+#H0 #5: spurious correlations versus real outliers in terms of sentiment, volume, etc.
+#H0 #6: tweet sentiment on national holidays = tweet sentiment on regular days
+#Vis 1: word network thing (Ali)
+#Vis 2: word cloud positive
+#Vis 3: word cloud negative
+#Vis 4: word cloud of all XX words in positive tweets
+#Vis 5: word cloud of all XX words in negative tweets
+
+
+xbar = mean(mb_sentiment_tweet$score_tweet)           # sample mean 
+#> mu0 = 15.4             # hypothesized value 
+#> s = 2.5                # sample standard deviation 
+#> n = 35                 # sample size 
+#> t = (xbar−mu0)/(s/sqrt(n)) 
+#> t                      # test statistic 
+#
+#> alpha = .05 
+#> t.half.alpha = qt(1−alpha/2, df=n−1) 
+#> c(−t.half.alpha, t.half.alpha)
   
 # create new dataframe calculating megabus sentiment Remove below?
 #megabussentiment_overall <- by_word %>%
