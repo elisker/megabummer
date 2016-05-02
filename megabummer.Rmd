@@ -24,7 +24,13 @@ TO BE COMPLETED: What questions are you trying to answer? How did these question
 
 ### Data: 
 
-We scraped data from the Twitter API using the TwitteR package. We cleaned the data using dplyr and the tidytext package, available here: https://github.com/juliasilge/tidytext. 
+Step 1: We scraped tweets with the keyword "megabus" during the period of January 1, 2015 through December 31, 2015 from the Twitter API using python package... 
+[LEO TO UPDATE with what he actually did - did you have to use tidytext?] 
+
+Step 2: 
+We imported four csv files, one for each quarter of tweets, as dataframes and thencombined the four quarters into one dataframe for the entire year. In order to look at variations in sentiment over days and time, we parsed the combined date and time variable into two new variables, containing just date and time information. 
+
+We cleaned the data using dplyr and the tidytext package, available here: https://github.com/juliasilge/tidytext. 
 
 TO BE COMPLETED: describe cleaning and add any info on python
 
