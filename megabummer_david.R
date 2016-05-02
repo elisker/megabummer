@@ -1,5 +1,5 @@
 #Documentation for twitteR: https://cran.r-project.org/web/packages/twitteR/twitteR.pdf
-install.packages("ggthemes")
+#install.packages("ggthemes")
 
 #library(ROAuth)
 #library(streamR)
@@ -7,7 +7,7 @@ install.packages("ggthemes")
 #library(rjson)
 #library(bit64)
 #library(httr)
-library(twitteR)
+#library(twitteR)
 library(dplyr)
 library(ggplot2)
 library(ggthemes)
@@ -81,6 +81,7 @@ names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favori
 #tweets_df_all$created <- as.POSIXct(tweets_df_all$date, format= "%m/%d/%y %H:%M")
 tweets_df_all$date2 <- format(tweets_df_all$date, format="%m-%d-%y")
 tweets_df_all$time <- format(tweets_df_all$date, format="%H:%M:%S") 
+View(tweets_df_all)
 
 # New column to distinguish weekend vs. non-weekend
 tweets_df_all$weekend <- "day"
@@ -97,19 +98,15 @@ for(i in 1:nrow(tweets_df_all)) {
   }
 }
 
-for(i in 1:5) {
-  print(i)
-}
-
 # explore favorited, retweet, and retweeted counts
-table(tweets_df_all$favorited)
-table(tweets_df_all$retweeted)
-table(tweets_df_all$isRetweet)
+#table(tweets_df_all$favorited)
+#table(tweets_df_all$retweeted)
+#table(tweets_df_all$isRetweet)
 
 # filter out retweets
-tweets_df_all <- tweets_df_all %>%
-  filter(!isRetweet) %>%
-  filter(!isRetweet)
+#tweets_df_all <- tweets_df_all %>%
+#  filter(!isRetweet) %>%
+#  filter(!isRetweet)
 
 
 # filter out duplicates
@@ -124,10 +121,6 @@ table(tweets_df_all$date2)
 
 # explore number of tweets per user including megabus handles
 prolific_tweeters_all <- tweets_df_all %>% 
-  group_by(screenName) %>%
-  summarise(tweets = n()) %>%
-  arrange(desc(tweets)) 
-prolific_tweeters_April <- tweets_df_April %>% 
   group_by(username) %>%
   summarise(tweets = n()) %>%
   arrange(desc(tweets)) 
@@ -137,13 +130,10 @@ tweets_df_all = tweets_df_all[!grepl("megabus|megabusuk|MegabusHelp|megabusit|me
 
 # explore number of tweets per user excluding megabus handles
 prolific_tweeters <- tweets_df_all %>% 
-  group_by(screenName) %>%
-  summarise(tweets = n()) %>%
-  arrange(desc(tweets)) 
-prolific_tweeters_April <- tweets_df_April %>% 
   group_by(username) %>%
   summarise(tweets = n()) %>%
   arrange(desc(tweets)) 
+
 # Histogram of number of tweets
 ggplot(filter(prolific_tweeters, tweets>0), aes(tweets)) + 
   geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Frequency") + theme_hc()
@@ -158,11 +148,6 @@ ggplot(data=tweets_df_all, aes(x=date)) +
   geom_histogram(aes(fill=..count..), binwidth=60*minutes) + 
   scale_x_datetime("Date") + 
   scale_y_continuous("Frequency")
-
-# really clunky look at tweets over 24 hour period
-tweets_df_all$time <- as.POSIXct(tweets_df_all$time, format="%H:%M:%S")
-brks <- trunc(range(tweets_df_all$time), "hours")
-hist(tweets_df_all$time, breaks=seq(brks[1], brks[2]+3600, by="30 min"))
 
 ###### SENTIMENT ANALYSIS ######
 
@@ -244,7 +229,7 @@ mb_sentiment <- by_word %>%
   mutate(score = ifelse(sentiment == "positive", 1, -1))
 
 # calculate score for each tweet
-#install.packages("data.table")
+install.packages("data.table")
 library(data.table)
 dt <- data.table(mb_sentiment)
 mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, created, date, time), by = c("id")] )
@@ -421,7 +406,7 @@ dtm <- TermDocumentMatrix(word_list_weekend)
 m <- as.matrix(dtm)
 v <- sort(rowSums(m),decreasing=TRUE)
 d <- data.frame(word = names(v),freq=v)
-head(d, 10)
+
 
 # Word Cloud (Weekend)
 set.seed(1234)
