@@ -87,7 +87,7 @@ tweets_df_all$weekend <- "day"
 for(i in 1:nrow(tweets_df_all)) {
   tweets_df_all[i,]$weekend <- weekdays(as.Date(tweets_df_all[i,]$date2,'%m-%d-%y'))
 }
-tweets_df_all <- saver
+
 tweets_df_all$weekend_binary <- 1
 for(i in 1:nrow(tweets_df_all)) {
   if(tweets_df_all$weekend[i]=="Sunday"|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday"){#|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday") {
@@ -216,18 +216,20 @@ library(tidyr)
 library(readr)
 
 by_word <- tweets_df_all %>%
-  select(text, id, date, date2, time) %>%
+  select(text, id, date, date2, time, weekend, weekend_binary) %>%
   unnest_tokens(word, text) 
-by_word <- tweets_df_all %>%
-  select(text, id, date2) %>%
-  unnest_tokens(word, text) 
+#by_word <- tweets_df_all %>%
+# select(text, id, date2) %>%
+#  unnest_tokens(word, text) 
+
 
 # look at most commonly tweeted words
 by_word_count <- by_word %>%
   count(word, sort = TRUE)
 
+
 #Ali's Directory
-#setwd(dir = "/Users/ablajda/desktop/DataScience/megabummer")
+setwd(dir = "/Users/ablajda/desktop/DataScience/megabummer")
 
 megabus_lexicon <- read_csv("megabus_lexicon.csv")
 
@@ -242,7 +244,7 @@ mb_sentiment <- by_word %>%
   mutate(score = ifelse(sentiment == "positive", 1, -1))
 
 # calculate score for each tweet
-install.packages("data.table")
+#install.packages("data.table")
 library(data.table)
 dt <- data.table(mb_sentiment)
 mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, created, date, time), by = c("id")] )
@@ -387,10 +389,72 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
           max.words=200, random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 
-####### END WORD CLOUD #######
+# Word Clouds by Weekend vs. Non-Weekend
 
-# Word Clouds by Date
+# Create Word List for Weekends
 View(by_word)
+word_list <- by_word %>% select(word, weekend_binary)
+View(word_list)
+
+word_list <- subset(word_list, word %in% bing_megabus$word)
+word_list_weekend <- word_list %>%
+  filter(weekend_binary==1)
+
+# Create Word List for Weekdays
+word_list_nonweekend <- word_list %>%
+  filter(weekend_binary==0)
+View(word_list_nonweekend)
+
+# Word Cloud for Weekend
+
+word_list_weekend <- Corpus(VectorSource(word_list_weekend))
+inspect(word_list_weekend)
+
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_weekend <- tm_map(word_list_weekend, toSpace, "/")
+word_list_weekend <- tm_map(word_list_weekend, toSpace, "@")
+word_list_weekend <- tm_map(word_list_weekend, toSpace, "\\|")
+word_list_weekend <- tm_map(word_list_weekend, removeWords, c("megabus", "the", "and", "https", "you", "t.co", "for", "this", "bus", "that")) 
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_weekend)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 10)
+
+# Word Cloud (Weekend)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+# Word Cloud for Weekday
+
+word_list_nonweekend <- Corpus(VectorSource(word_list_nonweekend))
+inspect(word_list_nonweekend)
+
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_nonweekend <- tm_map(word_list_nonweekend, toSpace, "/")
+word_list_nonweekend <- tm_map(word_list_nonweekend, toSpace, "@")
+word_list_nonweekend <- tm_map(word_list_nonweekend, toSpace, "\\|")
+word_list_nonweekend <- tm_map(word_list_nonweekend, removeWords, c("megabus", "the", "and", "https", "you", "t.co", "for", "this", "bus", "that")) 
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_nonweekend)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 10)
+
+# Word Cloud (Weekend)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+
+####### END WORD CLOUD #######
 
 # gganimate setup
 .rs.restartR()
