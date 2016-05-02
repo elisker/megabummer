@@ -1,4 +1,5 @@
 #Documentation for twitteR: https://cran.r-project.org/web/packages/twitteR/twitteR.pdf
+install.packages("ggthemes")
 
 #library(ROAuth)
 #library(streamR)
@@ -43,14 +44,14 @@ library(readr)
 #setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
 
 # setup for Emily
-setwd(dir = "/Users/eblisker/Documents/HSPH/Courses/2016 Spring/BIO 260/Final/megabummer")
-setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
+#setwd(dir = "/Users/eblisker/Documents/HSPH/Courses/2016 Spring/BIO 260/Final/megabummer")
+#setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
 
 #### SEARCH TWITTER AND SAVE ####
 
 # searching Twitter, English language tweets only
-tweets <- searchTwitter("megabus", n = 3500, lang="en")
-tweets_df <- bind_rows(lapply(tweets, as.data.frame))
+#tweets <- searchTwitter("megabus", n = 3500, lang="en")
+#tweets_df <- bind_rows(lapply(tweets, as.data.frame))
 
 # Export tweet pull as csv
 # write.csv(tweets_df_date, file = "tweets_df_date.csv") 
@@ -59,25 +60,46 @@ tweets_df <- bind_rows(lapply(tweets, as.data.frame))
 
 # load older tweets and merge datasets
 options(digits = 22) # to prevent tweet id from truncating
-tweets_df_4_26 <- read_csv("megabus_tweets_df_4-26.csv")
-tweets_df_4_27 <- read_csv("megabus_tweets_df_4-27.csv")
-tweets_df_4_29 <- read_csv("megabus_tweets_df_4-29.csv")
+#tweets_df_4_26 <- read_csv("megabus_tweets_df_4-26.csv")
+#tweets_df_4_27 <- read_csv("megabus_tweets_df_4-27.csv")
+#tweets_df_4_29 <- read_csv("megabus_tweets_df_4-29.csv")
 
 #Leo loading April tweets
-tweets_df_April <- read_csv("April.csv")
+tweets_df_all <- read_csv("2015-q1 copy.csv")
+names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favorites","mentions","hashtags")
 #Leo's tasks related to understanding python dataset:
 ###determine whether the tweets obtained are all original vs. some are retweets. 
    ###None have the same id but 56 of 4140 have the same text. So maybe these are retweets.
 ###I basically duplicated a lot of Emily's code with minor modifications due to
 ###different df structure for the April tweets, and gave things different variable names to reduce confusion.
 
-tweets_df_all <- rbind(tweets_df_4_26, tweets_df_4_27, tweets_df_4_29)
-tweets_df_all[,1] <- NULL # remove extra column
+#tweets_df_all <- rbind(tweets_df_4_26, tweets_df_4_27, tweets_df_4_29)
+#tweets_df_all[,1] <- NULL # remove extra column
 
-tweets_df_all$created <- as.POSIXct(tweets_df_all$created, format= "%m/%d/%y %H:%M")
-tweets_df_all$date <- format(tweets_df_all$created, format="%m-%d-%y")
-tweets_df_all$time <- format(tweets_df_all$created, format="%H:%M:%S") 
+#sapply(tweets_df_all, class)
 
+#tweets_df_all$created <- as.POSIXct(tweets_df_all$date, format= "%m/%d/%y %H:%M")
+tweets_df_all$date2 <- format(tweets_df_all$date, format="%m-%d-%y")
+tweets_df_all$time <- format(tweets_df_all$date, format="%H:%M:%S") 
+
+# New column to distinguish weekend vs. non-weekend
+tweets_df_all$weekend <- "day"
+for(i in 1:nrow(tweets_df_all)) {
+  tweets_df_all[i,]$weekend <- weekdays(as.Date(tweets_df_all[i,]$date2,'%m-%d-%y'))
+}
+tweets_df_all <- saver
+tweets_df_all$weekend_binary <- 1
+for(i in 1:nrow(tweets_df_all)) {
+  if(tweets_df_all$weekend[i]=="Sunday"|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday"){#|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday") {
+    tweets_df_all[i,]$weekend_binary <- 1
+  } else {
+    tweets_df_all[i,]$weekend_binary <- 0
+  }
+}
+
+for(i in 1:5) {
+  print(i)
+}
 
 # explore favorited, retweet, and retweeted counts
 table(tweets_df_all$favorited)
@@ -94,11 +116,11 @@ tweets_df_all <- tweets_df_all %>%
 tweets_df_all <- tweets_df_all %>%
   distinct(id)
 # filter out duplicates (Leo-April)
-tweets_df_April <- tweets_df_April %>%
+tweets_df_all <- tweets_df_all %>%
   distinct(text)
 
 # make table of number of tweets per day
-table(tweets_df_all$date)
+table(tweets_df_all$date2)
 
 # explore number of tweets per user including megabus handles
 prolific_tweeters_all <- tweets_df_all %>% 
@@ -111,9 +133,7 @@ prolific_tweeters_April <- tweets_df_April %>%
   arrange(desc(tweets)) 
 
 # filter out tweets from megabus operators
-tweets_df_all = tweets_df_all[!grepl("megabus|megabusuk|MegabusHelp|megabusit|megabusde|megabusGold", tweets_df_all$screenName),]
-tweets_df_April = tweets_df_April[!grepl("megabus|megabusuk|MegabusHelp|megabusit|megabusde|megabusGold", tweets_df_April$username),]
-
+tweets_df_all = tweets_df_all[!grepl("megabus|megabusuk|MegabusHelp|megabusit|megabusde|megabusGold", tweets_df_all$username),]
 
 # explore number of tweets per user excluding megabus handles
 prolific_tweeters <- tweets_df_all %>% 
@@ -132,14 +152,9 @@ ggplot(filter(prolific_tweeters, tweets>0), aes(tweets)) +
 
 # Plot the frequency of tweets over time in two hour windows
 # Modified from http://michaelbommarito.com/2011/03/12/a-quick-look-at-march11-saudi-tweets/
-minutes <- 120
-ggplot(data=tweets_df_all, aes(x=created)) + 
-  geom_histogram(aes(fill=..count..), binwidth=60*minutes) + 
-  scale_x_datetime("Date") + 
-  scale_y_continuous("Frequency")
 
 minutes <- 1440
-ggplot(data=tweets_df_April, aes(x=date)) + 
+ggplot(data=tweets_df_all, aes(x=date)) + 
   geom_histogram(aes(fill=..count..), binwidth=60*minutes) + 
   scale_x_datetime("Date") + 
   scale_y_continuous("Frequency")
@@ -201,10 +216,10 @@ library(tidyr)
 library(readr)
 
 by_word <- tweets_df_all %>%
-  select(text, id, created, date, time) %>%
+  select(text, id, date, date2, time) %>%
   unnest_tokens(word, text) 
-by_word <- tweets_df_April %>%
-  select(text, id, date) %>%
+by_word <- tweets_df_all %>%
+  select(text, id, date2) %>%
   unnest_tokens(word, text) 
 
 # look at most commonly tweeted words
@@ -227,6 +242,7 @@ mb_sentiment <- by_word %>%
   mutate(score = ifelse(sentiment == "positive", 1, -1))
 
 # calculate score for each tweet
+install.packages("data.table")
 library(data.table)
 dt <- data.table(mb_sentiment)
 mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, created, date, time), by = c("id")] )
@@ -307,6 +323,7 @@ negatives = bing_megabus %>%
 install.packages("wordcloud")
 install.packages("tm")
 install.packages("SnowballC")
+
 install.packages("RColorBrewer") # color palettes
 
 library(tm)
