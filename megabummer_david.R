@@ -312,7 +312,6 @@ install.packages("RColorBrewer") # color palettes
 library(tm)
 library(SnowballC)
 library(wordcloud)
-<<<<<<< HEAD
 library(RColorBrewer)
 
 View(by_word)
