@@ -421,6 +421,7 @@ ggplot(mb_sentiment_holidays, aes(x=holiday, y=freq, group=holiday)) +
 #Vis 4: word cloud of all XX words in positive tweets
 #Vis 5: word cloud of all XX words in negative tweets
 
+#ybar
 
 #xbar = mean(mb_sentiment_tweet$score_tweet)           # sample mean 
 #> mu0 = 15.4             # hypothesized value 
