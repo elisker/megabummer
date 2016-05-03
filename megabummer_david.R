@@ -64,8 +64,12 @@ options(digits = 22) # to prevent tweet id from truncating
 #tweets_df_4_27 <- read_csv("megabus_tweets_df_4-27.csv")
 #tweets_df_4_29 <- read_csv("megabus_tweets_df_4-29.csv")
 
-#Leo loading April tweets
+#q1 2015 data set
 tweets_df_all <- read_csv("2015-q1 copy.csv")
+
+#full data set
+#tweets_df_all <- read_csv("q12015-q22016 copy.csv")
+
 names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favorites","mentions","hashtags")
 #Leo's tasks related to understanding python dataset:
 ###determine whether the tweets obtained are all original vs. some are retweets. 
@@ -83,7 +87,7 @@ tweets_df_all$date2 <- format(tweets_df_all$date, format="%m-%d-%y")
 tweets_df_all <- tweets_df_all %>% 
   filter(date2 != "12-31-14")
 tweets_df_all$time <- format(tweets_df_all$date, format="%H:%M:%S") 
-View(tweets_df_all)
+#View(tweets_df_all)
 
 # New column to distinguish weekend vs. non-weekend
 tweets_df_all$weekend <- "day"
@@ -117,7 +121,7 @@ tweets_df_all <- tweets_df_all %>%
   distinct(text)
 #nrow(tweets_df_all)
 # make table of number of tweets per day
-table(tweets_df_all$date2)
+#table(tweets_df_all$date2)
 
 # explore number of tweets per user including megabus handles
 #prolific_tweeters_all <- tweets_df_all %>% 
@@ -129,14 +133,14 @@ table(tweets_df_all$date2)
 tweets_df_all = tweets_df_all[!grepl("megabus|megabusuk|MegabusHelp|megabusit|megabusde|megabusGold", tweets_df_all$username),]
 
 # explore number of tweets per user excluding megabus handles
-prolific_tweeters <- tweets_df_all %>% 
-  group_by(username) %>%
-  summarise(tweets = n()) %>%
-  arrange(desc(tweets))
+#prolific_tweeters <- tweets_df_all %>% 
+#  group_by(username) %>%
+#  summarise(tweets = n()) %>%
+#  arrange(desc(tweets))
 
 # Histogram of number of tweets
-ggplot(filter(prolific_tweeters, tweets>0), aes(tweets)) + 
-  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Frequency") + theme_hc()
+#ggplot(filter(prolific_tweeters, tweets>0), aes(tweets)) + 
+#  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Frequency") + theme_hc()
 
 
 
@@ -225,12 +229,34 @@ mb_sentiment <- by_word %>%
   mutate(score = ifelse(sentiment == "positive", 1, -1))
 
 # calculate score for each tweet
+options(digits = 22)
 library(data.table)
 dt <- data.table(mb_sentiment)
-mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, date, weekend_binary, date2, time), by = c("id")] )
 
-mb_sentiment_date <- unique(mb_sentiment_tweet[,list(score_day = mean(score_tweet), freq = .N), by = c("date2")] )
 
+mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, date, weekend_binary, date2, weekend, time), by = c("id")] )
+
+mb_sentiment_date <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N, weekend_binary), by = c("date2")] )
+mb_sentiment_date <- mb_sentiment_date %>% filter(freq<500)
+mb_sentiment_holidays <- mb_sentiment_date %>% 
+  mutate(holiday = ifelse(date2 == "01-01-15" |
+                            date2 == "01-19-15" |
+                            date2 == "02-14-15" |
+                            date2 == "02-16-15" |
+                            date2 == "05-25-15" |
+                            date2 == "09-07-15" |
+                            date2 == "10-12-15" |
+                            date2 == "10-31-15" |
+                            date2 == "11-11-15" |
+                            date2 == "11-26-15" |
+                            date2 == "12-25-15" |
+                            date2 == "01-01-16" |
+                            date2 == "01-18-16" |
+                            date2 == "02-14-16" |
+                            date2 == "02-15-16",1,
+                          0
+                            ))
+#mb_sentiment_day <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N), by = c("weekend")] )
 
 # summary stats
 library(Hmisc)
@@ -239,61 +265,117 @@ library(Hmisc)
 describe(mb_sentiment_tweet)
 describe(mb_sentiment_date)
 
-# graph sentiment score over time 
+# graph sentiment score over time
 ggplot(data=mb_sentiment_tweet, aes(x=date2, y=score_tweet)) + 
   geom_line()
-# graph tweet sentiment as a function of tweet volume
-ggplot(data=mb_sentiment_date, aes(x=freq, y=score_day)) + 
-  geom_line()
 
 
-# histogram of sentiment scores
+
+
+# histogram of sentiment scores (tweet)
 ggplot(data=mb_sentiment_tweet, aes(score_tweet)) + 
   geom_histogram(binwidth = 1)
-
-# average the sentiment score over 2 hour periods
-ggplot(data=mb_sentiment_tweet, aes(x=date2, y=score_tweet)) + 
-  geom_line()
+# histogram of sentiment scores (day)
+ggplot(data=mb_sentiment_date, aes(score_date)) + 
+  geom_histogram(binwidth = 0.1)
 
 #ggplot(data=mb_sentiment_tweet, aes(x=time, y=score_tweet)) + 
-#  geom_box()#does this work? I had to write geom_boxplot()
+#  geom_boxplot()#does this work? I had to write geom_boxplot()
 
 
 # boxplots and violine plotsof sentiment by date
+#ggplot(mb_sentiment_tweet, aes(x=date2, y=freq, group=date2)) +
+#  geom_boxplot(aes(fill=date2)) +
+#  geom_jitter(colour="gray40",
+#              position=position_jitter(width=0.2), alpha=0.3) 
+
+# bar chart of average score (NEED to fix y axis scale)
+#meanscore <- tapply(mb_sentiment_tweet$score_tweet, mb_sentiment_tweet$date2, mean)
+#df = data.frame(day=names(meanscore), meanscore=meanscore)
+#df$day <- reorder(df$day, df$meanscore)
+#ggplot(df, aes(x=day, y=meanscore)) +
+#  geom_bar(stat = "identity") +
+#  scale_y_continuous("Frequency")
+
+
+#Hyp. #1: tweet sentiment on low volume days = on high volume days
+h1.lm <- lm(score_date ~ freq, data = mb_sentiment_date)
+summary(h1.lm)
+#REJECT THE NULL (STRONGLY), conclude that tweet sentiment on low volume days > tweet sentiment on high volume days
+# graph tweet sentiment as a function of tweet volume
+ggplot(data=mb_sentiment_date, aes(x=freq, y=score_date)) + 
+  geom_line()
+
+
+#Hyp. #2: sentiment weekend = sentiment weekday 
+#(looking at weekend and nonweekend as two large groups of tweet scores)
+#Just looking at average tweet score for all weekend days versus all weekdays
+the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 1)
+not_the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 0)
+var.test(the_weekend$score_tweet,not_the_weekend$score_tweet)#variances are equal if p-value > 0.05
+t.test(the_weekend$score_tweet,not_the_weekend$score_tweet)#,var.equal = TRUE)
+#Conclusion: When looking at all weekend vs weekday tweet scores as one large group, 
+#mean tweet score on weekend is significantly less than mean tweet score on non-weekend, 
+#*without* stratifying on tweet volume.
 ggplot(mb_sentiment_tweet, aes(x=weekend_binary, y=score_tweet, group=weekend_binary)) +
   geom_boxplot(aes(fill=weekend_binary)) +
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
 
-# bar chart of average score (NEED to fix y axis scale)
-meanscore <- tapply(mb_sentiment_tweet$score_tweet, mb_sentiment_tweet$date2, mean)
-df = data.frame(day=names(meanscore), meanscore=meanscore)
-df$day <- reorder(df$day, df$meanscore)
-ggplot(df, aes(x=day, y=meanscore)) +
-  geom_bar(stat = "identity") +
-  scale_y_continuous("Frequency")
+#Hyp. #3: sentiment weekend = sentiment weekday 
+#(looking at weekend and nonweekend as two large groups of DAILY AVERAGES
+#of gweet scores)
+the_weekend_date = mb_sentiment_date %>% filter(weekend_binary == 1)
+not_the_weekend = mb_sentiment_date %>% filter(weekend_binary == 0)
+var.test(the_weekend_date$score_date,not_the_weekend_date$score_date)#variances are equal if p-value > 0.05
+t.test(the_weekend_date$score_date,not_the_weekend_date$score_date)#,var.equal = TRUE)
+#Conclusion: Mean of daily tweet scores on weekend is significantly less than 
+#mean tweet score on non-weekend, *without* stratifying on tweet volume.
+ggplot(mb_sentiment_date, aes(x=weekend_binary, y=score_date, group=weekend_binary)) +
+  geom_boxplot(aes(fill=weekend_binary)) +
+  geom_jitter(colour="gray40",
+              position=position_jitter(width=0.2), alpha=0.3) 
 
+#Hyp. #4: sentiment weekend = sentiment weekday when stratifying on freq.
+#[multiple linear regression]
+fit <- lm(score_date ~ weekend_binary + freq, data=mb_sentiment_date)
+summary(fit) # show results
+#DO NOT REJECT THE NULL, conclusion: that the association between weekend and tweet sentiment
+#is *entirely* due to volume
+#I'm not sure how to graphically represent muliple linear regression.
 
-
-#H0 #1: sentiment weekend = sentiment weekday = ~-0.29
-the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 1)
-not_the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 0)
-var.test(the_weekend$score_tweet,not_the_weekend$score_tweet)
-t.test(the_weekend$score_tweet,not_the_weekend$score_tweet,var.equal = TRUE)
-#H0 #2: tweet volume weekend = tweet volume weekday
+#Hyp. #5: tweet volume weekend = tweet volume weekday
 the_weekend_vol <- the_weekend %>% group_by(date2) %>% count(date2)
 not_the_weekend_vol <- not_the_weekend %>% group_by(date2) %>% count(date2)
 var.test(the_weekend_vol$n,not_the_weekend_vol$n)
 t.test(the_weekend_vol$n,not_the_weekend_vol$n)
-#H0 #4: tweet sentiment (based on overall words) on low volume days = on high volume days
-h4.lm <- lm(score_day ~ freq, data = mb_sentiment_date)
-summary(h4.lm)
-#null hypothesis rejected!
+#REJECT THE NULL (STRONGLY), conclude that tweet volume weekend != tweet volume weekday
+ggplot(mb_sentiment_date, aes(x=weekend_binary, y=freq, group=weekend_binary)) +
+  geom_boxplot(aes(fill=weekend_binary)) +
+  geom_jitter(colour="gray40",
+              position=position_jitter(width=0.2), alpha=0.3) 
 
-#H0 #5: tweet sentiment (based on overall words) on low volume days = on high volume days
-h4.lm <- lm(score_day ~ freq, data = mb_sentiment_date)
-summary(h4.lm)
-#null hypothesis rejected!
+
+#Hyp. #6: sentiment holiday = sentiment !holiday
+#Without stratifying on volume
+holiday = mb_sentiment_holidays %>% filter(holiday == 1)
+not_holiday = mb_sentiment_holidays %>% filter(holiday == 0)
+var.test(holiday$score_date,not_holiday$score_date)#variances are equal if p-value > 0.05
+t.test(holiday$score_date,not_holiday$score_date,var.equal = TRUE)
+#There is no association between holiday and tweet sentiment WITHOUT stratifying on volume.
+
+#Stratifying on volume
+#[multiple linear regression]
+fit <- lm(score_date ~ holiday + freq, data=mb_sentiment_holidays)
+summary(fit) # show results
+#There is no association between holiday and tweet sentiment WITH stratifying on volume.
+ggplot(mb_sentiment_holidays, aes(x=holiday, y=freq, group=holiday)) +
+  geom_boxplot(aes(fill=holiday)) +
+  geom_jitter(colour="gray40",
+              position=position_jitter(width=0.2), alpha=0.3) 
+
+
+
 
 
 #mb_sentiment_tweet_vol <- mb_sentiment_tweet %>% group_by(date2) %>% count(date2)
@@ -320,7 +402,6 @@ summary(h4.lm)
 #}
 #mb_sentiment_tweet_quartiles <- left_join(mb_sentiment_tweet,mb_sentiment_tweet_vol,by="date2") %>% select(-n)
 #mb_sentiment_tweet_quartiles$quartile = factor(mb_sentiment_tweet_quartiles$quartile)
-
 #ggplot(mb_sentiment_tweet_quartiles, aes(x=quartile, y = score_tweet)) +
 #  geom_boxplot(fill = "grey80", colour = "blue") +
 #  scale_x_discrete() + xlab("Quartile") +
@@ -328,8 +409,12 @@ summary(h4.lm)
 #tweet_volume_model <- lm(score_tweet ~ quartile, data = mb_sentiment_tweet_quartiles)
 #summary(tweet_volume_model)
 
-#H0 #5: spurious correlations versus real outliers in terms of sentiment, volume, etc.
-#H0 #6: tweet sentiment on national holidays = tweet sentiment on regular days
+
+
+
+
+
+
 #Vis 1: word network thing (Ali)
 #Vis 2: word cloud positive
 #Vis 3: word cloud negative
@@ -337,7 +422,7 @@ summary(h4.lm)
 #Vis 5: word cloud of all XX words in negative tweets
 
 
-xbar = mean(mb_sentiment_tweet$score_tweet)           # sample mean 
+#xbar = mean(mb_sentiment_tweet$score_tweet)           # sample mean 
 #> mu0 = 15.4             # hypothesized value 
 #> s = 2.5                # sample standard deviation 
 #> n = 35                 # sample size 
@@ -370,11 +455,11 @@ negatives = bing_megabus %>%
 # https://www.credera.com/blog/technology-insights/open-source-technology-insights/twitter-analytics-using-r-part-3-compare-sentiments/
 
 # create wordcloud, resource: http://www.rdatamining.com/docs/twitter-analysis-with-r
-install.packages("wordcloud")
-install.packages("tm")
-install.packages("SnowballC")
+#install.packages("wordcloud")
+#install.packages("tm")
+#install.packages("SnowballC")
 
-install.packages("RColorBrewer") # color palettes
+#install.packages("RColorBrewer") # color palettes
 
 library(tm)
 library(SnowballC)
@@ -573,6 +658,6 @@ wordcloud(words = names(word.freq), freq = word.freq, min.freq = 3,
           random.order = F, colors = pal)
 
 # Export file as csv
-write.csv(tweets_df, file = "megabus_tweets_df_4-26.csv")
-write.csv(by_word, file = "megabus_by_word_4-26.csv")
+#write.csv(tweets_df, file = "megabus_tweets_df_4-26.csv")
+#write.csv(by_word, file = "megabus_by_word_4-26.csv")
 
