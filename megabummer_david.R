@@ -486,6 +486,37 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
 
 ####### END WORD CLOUD #######
 
+# Word Cooccurence
+
+View(by_word)
+word_cooccurences <- by_word %>% select(word, id)
+word_cooccurences <- subset(word_cooccurences, word %in% bing_megabus$word)
+
+word_cooccurences <- word_cooccurences %>%
+  pair_count(id, word, sort = TRUE)
+word_cooccurences
+
+install.packages("igraph")
+if(!require(devtools)) {
+  install.packages('devtools')
+}
+devtools::install_github('hadley/ggplot2')
+devtools::install_github('thomasp85/ggforce')
+devtools::install_github('thomasp85/ggraph')
+
+library(igraph)
+library(ggraph)
+
+set.seed(2016)
+word_cooccurences %>%
+  filter(n >= 10) %>%
+  graph_from_data_frame() %>%
+  ggraph(layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n, edge_width = n)) +
+  geom_node_point(color = "lightblue", size = 5) +
+  geom_node_text(aes(label = name), vjust = 1.8) +
+  theme_void()
+
 # gganimate setup
 .rs.restartR()
 
