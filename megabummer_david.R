@@ -306,6 +306,9 @@ summary(h1.lm)
 ggplot(data=mb_sentiment_date, aes(x=freq, y=score_date)) + 
   geom_line()
 
+# Diagnostic plots
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
+plot(h1.lm)
 
 #Hyp. #2: sentiment weekend = sentiment weekday 
 #(looking at weekend and nonweekend as two large groups of tweet scores)
@@ -326,7 +329,7 @@ ggplot(mb_sentiment_tweet, aes(x=weekend_binary, y=score_tweet, group=weekend_bi
 #(looking at weekend and nonweekend as two large groups of DAILY AVERAGES
 #of gweet scores)
 the_weekend_date = mb_sentiment_date %>% filter(weekend_binary == 1)
-not_the_weekend = mb_sentiment_date %>% filter(weekend_binary == 0)
+not_the_weekend_date = mb_sentiment_date %>% filter(weekend_binary == 0)
 var.test(the_weekend_date$score_date,not_the_weekend_date$score_date)#variances are equal if p-value > 0.05
 t.test(the_weekend_date$score_date,not_the_weekend_date$score_date)#,var.equal = TRUE)
 #Conclusion: Mean of daily tweet scores on weekend is significantly less than 
