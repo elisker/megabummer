@@ -416,10 +416,6 @@ ggplot(mb_sentiment_holidays, aes(x=holiday, y=freq, group=holiday)) +
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
 
-
-
-
-
 #mb_sentiment_tweet_vol <- mb_sentiment_tweet %>% group_by(date2) %>% count(date2)
 #tweet_quartiles <- mb_sentiment_tweet_vol%>%
 #  summarise(`25%`=quantile(n, probs=0.25),
