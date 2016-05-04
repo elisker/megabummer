@@ -71,6 +71,9 @@ tweets_df_all <- read_csv("2015-q1 copy.csv")
 #tweets_df_all <- read_csv("q12015-q22016 copy.csv")
 #get a subset of random lines from this to work with
 
+#subset of full data set
+#tweets_df_sample <- tweets_df_all[sample(1:nrow(tweets_df_all), 30000, replace=FALSE),]
+
 names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favorites","mentions","hashtags")
 #Leo's tasks related to understanding python dataset:
 ###determine whether the tweets obtained are all original vs. some are retweets. 
@@ -266,25 +269,33 @@ library(Hmisc)
 describe(mb_sentiment_tweet)
 describe(mb_sentiment_date)
 
-# graph sentiment score over time
-ggplot(data=mb_sentiment_tweet, aes(x=date2, y=score_tweet)) + 
+# As you can see, the line graph of the sentiment score over time is not that useful. 
+ggplot(data=mb_sentiment_tweet, aes(x=date, y=score_tweet)) + 
   geom_line()
 
+# Instead of fitting a line, we can stratify by date and compute the mean sentiment score,referred to as _bin smoothing_. 
+# Smoothing is useful for this analysis as it is designed to estimate $f(x)$ when the shape is unknown, but assumed to be _smooth_.  
+# When we group the data points into strata, days in this case, that are expected to have similar expectations and calculate the average
+# or fit a simple model in each strata. We assume the curve is approximately constant within the bin  and that all the sentiment scores 
+# in that bin have the same expected value. 
+ggplot(data=mb_sentiment_tweet, aes(x=date, y=score_tweet)) + 
+  geom_smooth()
 
-
-
-# histogram of sentiment scores (tweet)
+# histogram of all sentiment scores (tweet)
 ggplot(data=mb_sentiment_tweet, aes(score_tweet)) + 
   geom_histogram(binwidth = 1)
-# histogram of sentiment scores (day)
+
+# histogram of all sentiment scores (day)
 ggplot(data=mb_sentiment_date, aes(score_date)) + 
   geom_histogram(binwidth = 0.1)
 
-#ggplot(data=mb_sentiment_tweet, aes(x=time, y=score_tweet)) + 
+# Adding month in case we want to look at variations by month
+mb_sentiment_date$month <- month(as.POSIXlt(mb_sentiment_date$date2, format="%m-%d-%y"))
+
+#ggplot(data=mb_sentiment_date, aes(x=month, y=score_date)) + 
 #  geom_boxplot()#does this work? I had to write geom_boxplot()
 
-
-# boxplots and violine plotsof sentiment by date
+# boxplots and violin plots of sentiment by date
 #ggplot(mb_sentiment_tweet, aes(x=date2, y=freq, group=date2)) +
 #  geom_boxplot(aes(fill=date2)) +
 #  geom_jitter(colour="gray40",
@@ -303,10 +314,42 @@ ggplot(data=mb_sentiment_date, aes(score_date)) +
 h1.lm <- lm(score_date ~ freq, data = mb_sentiment_date)
 summary(h1.lm)
 #REJECT THE NULL (STRONGLY), conclude that tweet sentiment on low volume days > tweet sentiment on high volume days
+# The volume of tweets on a given day is a statistically significant predictor of the average daily sentiment score and
+# that for every additional tweet, we would expect a 0.001 decrease in average daily sentiment score.
+
 # graph tweet sentiment as a function of tweet volume
 ggplot(data=mb_sentiment_date, aes(x=freq, y=score_date)) + 
   geom_line()
 
+score_date.res = resid(h1.lm)
+plot(mb_sentiment_date$freq, score_date.res, 
+ylab="Residuals", xlab="Number of Tweets", 
+main="Tweets and Megabus Sentiment")
+abline(0,0)
+                
+
+# Evaluate homoscedasticity
+# non-constant error variance test
+ncvTest(h1.lm)
+# We fail to reject the null hypothesis of homoskedastic errors
+
+# Diagnostic plots
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
+plot(h1.lm)
+
+#install.packages("car")
+library(car)
+# Normality of Residuals
+# qq plot for studentized resid
+qqPlot(h1.lm, main="QQ Plot")
+# distribution of studentized residuals
+#library(MASS)
+sresid <- studres(h1.lm) 
+hist(sresid, freq=FALSE, 
+     main="Distribution of Studentized Residuals")
+xfit<-seq(min(sresid),max(sresid),length=40) 
+yfit<-dnorm(xfit) 
+lines(xfit, yfit)
 
 #Hyp. #2: sentiment weekend = sentiment weekday 
 #(looking at weekend and nonweekend as two large groups of tweet scores)
@@ -346,10 +389,10 @@ summary(fit) # show results
 #I'm not sure how to graphically represent muliple linear regression.
 
 #Hyp. #5: tweet volume weekend = tweet volume weekday
-#the_weekend_vol <- the_weekend_date %>% group_by(date2) %>% count(date2)
-#not_the_weekend_vol <- not_the_weekend_date %>% group_by(date2) %>% count(date2)
+
 var.test(the_weekend_date$freq,not_the_weekend_date$freq)
 t.test(the_weekend_date$freq,not_the_weekend_date$freq)
+
 #REJECT THE NULL (STRONGLY), conclude that tweet volume weekend != tweet volume weekday
 ggplot(mb_sentiment_date, aes(x=weekend_binary, y=freq, group=weekend_binary)) +
   geom_boxplot(aes(fill=weekend_binary)) +
@@ -374,10 +417,6 @@ ggplot(mb_sentiment_holidays, aes(x=holiday, y=freq, group=holiday)) +
   geom_boxplot(aes(fill=holiday)) +
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
-
-
-
-
 
 #mb_sentiment_tweet_vol <- mb_sentiment_tweet %>% group_by(date2) %>% count(date2)
 #tweet_quartiles <- mb_sentiment_tweet_vol%>%
