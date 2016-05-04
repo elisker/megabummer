@@ -569,3 +569,34 @@ wordcloud(words = names(word.freq), freq = word.freq, min.freq = 3,
 #write.csv(tweets_df, file = "megabus_tweets_df_4-26.csv")
 #write.csv(by_word, file = "megabus_by_word_4-26.csv")
 
+head(by_word)
+word_list <- by_word %>% dplyr::select(word, date2)
+head(word_list)
+
+word_list <- subset(word_list, word %in% bing_megabus$word)
+word_list_date <- word_list %>%
+  filter(date2=="01-01-15")
+word_list_date <- word_list_date %>% dplyr::select(word)
+
+word_list_date <- Corpus(VectorSource(word_list_date))
+#inspect(word_list_date)
+
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_date <- tm_map(word_list_date, toSpace, "/")
+word_list_date <- tm_map(word_list_date, toSpace, "@")
+word_list_date <- tm_map(word_list_date, toSpace, "\\|")
+word_list_date <- tm_map(word_list_date, removeWords, c("megabus", "the", "and", "https", "you", "t.co", "for", "this", "bus", "that")) 
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_date)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+
+
+# Word Cloud (Date)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
