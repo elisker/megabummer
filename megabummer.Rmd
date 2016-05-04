@@ -46,10 +46,7 @@ In order to look at variations in sentiment over days and time, we parsed the co
 
 We cleaned the data using dplyr and the tidytext package, in order to help with the text mining tasks necessary for sentiment analysis, available here: https://github.com/juliasilge/tidytext. 
 
-#### Sentiment Analysis
-Like most sentiment analyses, we relied on a lexicon of positive and negative words. We started with the Bing lexicon in the tidytext package in the sentiment dataset (described here in more detail https://www.cs.uic.edu/~liub/). This lexicon has been compiled over the past 12 years by researchers at the University of Illinois at Chicago. 
 
-After initial review of the Bing lexicon, we realized that we need to supplement the list of positive and negative words in order to capture the extent of Megabus transportation-specific sentiments. We added a total of 57 sentiment related to Megabus and transportation experience. These additional negative and positive words were identified  by manually reviewing a random sample from 2900 tweets containing the keyword, "megabus" queried on 4/20/2016, following methods similar to those described here: http://www.wired.com/2015/02/best-worst-public-transit-systems-according-twitter/. This review comparing the Bing lexicon with Megabus tweets also revealed that a few sentiments already in the lexicon needed to be recorded or removed. These included: changing "uneventful" from negative to positive, reversing "cheap" from negative to positive given Megabus's platform as a cheap transportation provider, and the removal of "like" which could be positive or negative and is probaby slang.
 
 ####Loading all necessary libraries
 ```{r}
@@ -57,6 +54,17 @@ library(dplyr)
 library(ggplot2)
 library(ggthemes)
 library(readr)
+library(devtools)
+library(tidytext)
+library(tidyr)
+library(readr)
+library(data.table)
+library(Hmisc)
+
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
 ```
 ####Loading and wrangling the full data set
 ```{r}
@@ -84,7 +92,7 @@ tweets_df_all <- tweets_df_all %>%
 tweets_df_all <- tweets_df_all %>%
   distinct(text)
 ```
-####Exploring the data set
+####Exploring the data set, part 1 (prior to sentiment analysis)
 ```{r}
 # explore number of tweets per user including megabus handles
 prolific_tweeters_all <- tweets_df_all %>% 
@@ -98,15 +106,6 @@ prolific_tweeters_filtered <- tweets_df_all %>%
   group_by(username) %>%
   summarise(tweets = n()) %>%
   arrange(desc(tweets))
-
-# Histogram of number of tweets
-ggplot(filter(prolific_tweeters_filtered, tweets>0), aes(tweets)) + 
-  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Number of users") + theme_hc()
-
-# Histogram of number of tweets
-ggplot(filter(prolific_tweeters_filtered, tweets>8), aes(tweets)) + 
-  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Number of users") + theme_hc()
-
 ```
 
 ### Exploratory Analysis
@@ -114,8 +113,173 @@ ggplot(filter(prolific_tweeters_filtered, tweets>8), aes(tweets)) +
 TO BE COMPLETED: What visualizations did you use to look at your data in different ways? What are the different statistical methods you considered? Justify the decisions you made, and show any major changes to your ideas. How did you reach these conclusions?
 
 ```{r}
+# Histogram of number of tweets
+ggplot(filter(prolific_tweeters_filtered, tweets>0), aes(tweets)) + 
+  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Number of users") + theme_hc()
+
+# Histogram of number of tweets, for users with more than 8 tweets so that we can get a closer look at the more prolific tweeters
+ggplot(filter(prolific_tweeters_filtered, tweets>8), aes(tweets)) + 
+  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Number of users") + theme_hc()
+
+#Tweets per day
+ggplot(data=tweets_df_all, aes(x=as.Date(date2,'%m-%d-%y'))) + 
+  geom_histogram(aes(fill=..count..), binwidth=1) + 
+  scale_x_date("Date") + 
+  scale_y_continuous("Frequency")
+
+#The outlying days with high tweet volume are:
+tweets_df_all %>% group_by(date2) %>% count(date2, sort = TRUE) %>% filter(n>500)
+#The outlying days with low tweet volume are:
+tweets_df_all %>% group_by(date2) %>% count(date2, sort = TRUE) %>% filter(n<100)
+```
+
+On each of the outlying days for high tweet volume, there were significant news stories about Megabus.
+
+[*April 13, 2015: ‘Hero’ passenger subdues gunman who may have tried to take over Megabus*](https://www.washingtonpost.com/news/morning-mix/wp/2015/05/13/hero-passenger-subdues-gunman-who-may-have-tried-to-take-over-megabus/)
+
+[*May 13, 2015: 19 injured in Megabus crash on I-65 in Indiana*](http://www.usatoday.com/story/news/nation/2015/04/13/megabus-crash-indiana/25707085/)
+
+[*February 21, 2016: The Day My Megabus Caught Fire*](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=newssearch&cd=1&ved=0ahUKEwjw6rqk18DMAhWLbT4KHacICLYQqQIIHCgAMAA&url=http%3A%2F%2Fwww.nytimes.com%2F2016%2F02%2F22%2Ftravel%2Fthe-day-my-megabus-caught-fire.html&usg=AFQjCNGn4yumdmj3dXBvebbspQf6saQwBw&sig2=x1ans1gQL3jwUhE4p5FEEg)
+
+
+
+#### Sentiment Analysis
+Like most sentiment analyses, we relied on a lexicon of positive and negative words. We started with the Bing lexicon in the tidytext package in the sentiment dataset (described here in more detail https://www.cs.uic.edu/~liub/). This lexicon has been compiled over the past 12 years by researchers at the University of Illinois at Chicago. 
+
+After initial review of the Bing lexicon, we realized that we need to supplement the list of positive and negative words in order to capture the extent of Megabus transportation-specific sentiments. We added a total of 57 sentiment related to Megabus and transportation experience. These additional negative and positive words were identified  by manually reviewing a random sample from 2900 tweets containing the keyword, "megabus" queried on 4/20/2016, following methods similar to those described here: http://www.wired.com/2015/02/best-worst-public-transit-systems-according-twitter/. This review comparing the Bing lexicon with Megabus tweets also revealed that a few sentiments already in the lexicon needed to be recorded or removed. These included: changing "uneventful" from negative to positive, reversing "cheap" from negative to positive given Megabus's platform as a cheap transportation provider, and the removal of "like" which could be positive or negative and is probaby slang.
+
+```{r}
+by_word <- tweets_df_all %>%
+  dplyr::select(text, id, date, date2, time, weekend, weekend_binary, month) %>%
+  unnest_tokens(word, text) 
+
+# look at most commonly tweeted words
+by_word_count <- by_word %>%
+  count(word, sort = TRUE) 
+head(by_word_count)
+
+megabus_lexicon <- read_csv("megabus_lexicon.csv")
+
+
+# create new dataframe of bing and megabummer sentiments
+bing_megabus <- megabus_lexicon %>%
+  filter(lexicon %in% c("bing","megabummer")) %>%
+  dplyr::select(-score)
+head(bing_megabus %>% filter(lexicon=="megabummer"))
+
+# join tweets with sentiment and add score column
+mb_sentiment <- by_word %>%
+  inner_join(bing_megabus) %>%
+  mutate(score = ifelse(sentiment == "positive", 1, -1))
+head(mb_sentiment %>% dplyr::select(id,word,sentiment,score))
+
+# calculate score for each tweet
+dt <- data.table(mb_sentiment)
+
+#build data set for sentiment analysis containing data on each tweet including sentiment score
+mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, date, weekend_binary, date2, weekend, month), by = c("id")] )
+tweets_df_all_joiner <- tweets_df_all %>% dplyr::select(id,text)
+mb_sentiment_tweet <- left_join(mb_sentiment_tweet,data.table(tweets_df_all_joiner),by="id")
+head(mb_sentiment_tweet)
+
+#Creating data table of calendar dates, including weekend status, day of week (column name weekend), month, and tweet frequency and sentiment
+mb_sentiment_date <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N, weekend_binary, weekend, month), by = c("date2")] )
+mb_sentiment_date <- mb_sentiment_date %>% filter(freq<500)
+head(mb_sentiment_date)
+
+#Creating data table of calendar dates and tweet frequency and sentiment with holiday status (including federal holidays, Valentine's Day, and Halloween)
+mb_sentiment_holidays <- mb_sentiment_date %>% 
+  mutate(holiday = ifelse(date2 == "01-01-15" |
+                            date2 == "01-19-15" |
+                            date2 == "02-14-15" |
+                            date2 == "02-16-15" |
+                            date2 == "05-25-15" |
+                            date2 == "09-07-15" |
+                            date2 == "10-12-15" |
+                            date2 == "10-31-15" |
+                            date2 == "11-11-15" |
+                            date2 == "11-26-15" |
+                            date2 == "12-25-15" |
+                            date2 == "01-01-16" |
+                            date2 == "01-18-16" |
+                            date2 == "02-14-16" |
+                            date2 == "02-15-16",1,
+                          0
+                            ))
+head(mb_sentiment_holidays)
+```
+####Exploring the data set, part 2 (sentiment analysis)
+The describe() function in Hmisc helped us see how tweet sentiment scores are distributed. In particular, we noticed that the distribution of *by tweet* sentiment scores was similar to the distribution of *by date* sentiment scores (the average sentiment score for that day). We therefore focused our analysis on the *by date* sentiment scores because it was a convenient bin for looking at trends over time and for moderating the considerable variance. The *by date* sentiment score gives a sense for the overall level of sentiment on any given day, which is what we ultimately decided to consider as our main outcome.
+```{r}
+describe(mb_sentiment_tweet)
+describe(mb_sentiment_date)
+describe(mb_sentiment_holidays)
+```
+Looking at a line graph of the sentiment score over time is not particularly useful--it is just a blur with much more variability than any clear trend.
+```{r}
+ggplot(data=mb_sentiment_tweet, aes(x=date, y=score_tweet)) + 
+  geom_line()
+```
+However, with smoothing, ebbs and flows over time become clear. Though there is much variance day to day, smoothing reveals broad seasonal trends. Smoothing is appropriate for tweet volume and sentiment because the outcome is continuous.
+```{r}
+options(digits = 3) 
+ggplot(data=mb_sentiment_tweet, aes(x=date, y=score_tweet)) + 
+  geom_smooth()
+options(digits = 22) 
+```
+This chart shows the distribution of daily sentiment scores. The tweets of most days aired on the negative side, with few days boasting an average tweet score above 0.
+```{r}
+options(digits = 3)
+ggplot(data=mb_sentiment_date, aes(score_date)) + 
+  geom_histogram(binwidth = 0.1)
+options(digits = 22)
+```
+
+####Visual Word Mapping
+We built word clouds and word webs to convey the frequency and cooccurrance of words.
+```{r}
+#Postive and negative word data sets.
+positives <- bing_megabus %>%
+  filter(sentiment == "positive") %>%
+  dplyr::select(word)
+
+negatives = bing_megabus %>%
+  filter(sentiment == "negative") %>%
+  dplyr::select(word)
+
+head(by_word)
+word_list <- by_word %>% dplyr::select(word)
+head(word_list)
+word_list_negatives <- subset(word_list, word %in% negatives$word)
+head(word_list_negatives)
+word_list_positives <- subset(word_list, word %in% positives$word)
+head(word_list_positives)
+
+# Negative Word Cloud
+word_list_negatives <- Corpus(VectorSource(word_list_negatives))
+inspect(word_list_negatives)
+
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_negatives <- tm_map(word_list_negatives, toSpace, "/")
+word_list_negatives <- tm_map(word_list_negatives, toSpace, "@")
+word_list_negatives <- tm_map(word_list_negatives, toSpace, "\\|")
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_negatives)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 10)
+
+# Word Cloud (Negative)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
 
 ```
+
 
 ### Final Analysis 
 

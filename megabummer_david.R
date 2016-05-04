@@ -68,10 +68,6 @@ tweets_df_all %>% group_by(date2) %>% count(date2, sort = TRUE) %>% filter(n<100
 
 #TODO (Emily) a version of the above chart that is smooth
 #TODO (Ali) include the articles in the Rmd, do what Rafa does
-#There were some outliers in tweet volume. We investigated Google to see if anything notable happened on days where tweet volume exceeded 500.
-#April 13, 2015: ‘Hero’ passenger subdues gunman who may have tried to take over Megabus https://www.washingtonpost.com/news/morning-mix/wp/2015/05/13/hero-passenger-subdues-gunman-who-may-have-tried-to-take-over-megabus/
-#May 13, 2015: 19 injured in Megabus crash on I-65 in Indiana http://www.usatoday.com/story/news/nation/2015/04/13/megabus-crash-indiana/25707085/
-#February 21, 2016: The Day My Megabus Caught Fire https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=newssearch&cd=1&ved=0ahUKEwjw6rqk18DMAhWLbT4KHacICLYQqQIIHCgAMAA&url=http%3A%2F%2Fwww.nytimes.com%2F2016%2F02%2F22%2Ftravel%2Fthe-day-my-megabus-caught-fire.html&usg=AFQjCNGn4yumdmj3dXBvebbspQf6saQwBw&sig2=x1ans1gQL3jwUhE4p5FEEg
 
 
 ###### SENTIMENT ANALYSIS ######
@@ -117,9 +113,9 @@ dt <- data.table(mb_sentiment)
 mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, date, weekend_binary, date2, weekend, month), by = c("id")] )
 tweets_df_all_joiner <- tweets_df_all %>% dplyr::select(id,text)
 mb_sentiment_tweet <- left_join(mb_sentiment_tweet,data.table(tweets_df_all_joiner),by="id")
-View(mb_sentiment_tweet)
+head(mb_sentiment_tweet)
 
-#Creating data table of calendar dates, including weekend status, and tweet frequency and sentiment
+#Creating data table of calendar dates, including weekend status, day of week (column name weekend), month, and tweet frequency and sentiment
 mb_sentiment_date <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N, weekend_binary, weekend, month), by = c("date2")] )
 mb_sentiment_date <- mb_sentiment_date %>% filter(freq<500)
 head(mb_sentiment_date)
@@ -182,12 +178,6 @@ ggplot(data=mb_sentiment_tweet, aes(score_tweet)) +
 # histogram of all sentiment scores (day)
 ggplot(data=mb_sentiment_date, aes(score_date)) + 
   geom_histogram(binwidth = 0.1)
-
-# Adding month in case we want to look at variations by month (month was added above but leaving this code here just in case)
-#mb_sentiment_date$month <- month(as.POSIXlt(mb_sentiment_date$date2, format="%m-%d-%y"))
-
-#ggplot(data=mb_sentiment_date, aes(x=month, y=score_date)) + 
-#  geom_boxplot()#does this work? I had to write geom_boxplot()
 
 # boxplots and violin plots of sentiment by date
 #ggplot(mb_sentiment_tweet, aes(x=date2, y=freq, group=date2)) +
