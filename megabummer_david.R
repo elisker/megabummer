@@ -69,6 +69,7 @@ tweets_df_all <- read_csv("2015-q1 copy.csv")
 
 #full data set
 #tweets_df_all <- read_csv("q12015-q22016 copy.csv")
+#get a subset of random lines from this to work with
 
 names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favorites","mentions","hashtags")
 #Leo's tasks related to understanding python dataset:
@@ -326,7 +327,7 @@ ggplot(mb_sentiment_tweet, aes(x=weekend_binary, y=score_tweet, group=weekend_bi
 #(looking at weekend and nonweekend as two large groups of DAILY AVERAGES
 #of gweet scores)
 the_weekend_date = mb_sentiment_date %>% filter(weekend_binary == 1)
-not_the_weekend = mb_sentiment_date %>% filter(weekend_binary == 0)
+not_the_weekend_date = mb_sentiment_date %>% filter(weekend_binary == 0)
 var.test(the_weekend_date$score_date,not_the_weekend_date$score_date)#variances are equal if p-value > 0.05
 t.test(the_weekend_date$score_date,not_the_weekend_date$score_date)#,var.equal = TRUE)
 #Conclusion: Mean of daily tweet scores on weekend is significantly less than 
@@ -345,10 +346,10 @@ summary(fit) # show results
 #I'm not sure how to graphically represent muliple linear regression.
 
 #Hyp. #5: tweet volume weekend = tweet volume weekday
-the_weekend_vol <- the_weekend %>% group_by(date2) %>% count(date2)
-not_the_weekend_vol <- not_the_weekend %>% group_by(date2) %>% count(date2)
-var.test(the_weekend_vol$n,not_the_weekend_vol$n)
-t.test(the_weekend_vol$n,not_the_weekend_vol$n)
+#the_weekend_vol <- the_weekend_date %>% group_by(date2) %>% count(date2)
+#not_the_weekend_vol <- not_the_weekend_date %>% group_by(date2) %>% count(date2)
+var.test(the_weekend_date$freq,not_the_weekend_date$freq)
+t.test(the_weekend_date$freq,not_the_weekend_date$freq)
 #REJECT THE NULL (STRONGLY), conclude that tweet volume weekend != tweet volume weekday
 ggplot(mb_sentiment_date, aes(x=weekend_binary, y=freq, group=weekend_binary)) +
   geom_boxplot(aes(fill=weekend_binary)) +
