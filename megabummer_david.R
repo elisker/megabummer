@@ -1,71 +1,14 @@
 #Documentation for twitteR: https://cran.r-project.org/web/packages/twitteR/twitteR.pdf
-#install.packages("ggthemes")
 
-#library(ROAuth)
-#library(streamR)
-#library(devtools)
-#library(rjson)
-#library(bit64)
-#library(httr)
-#library(twitteR)
 library(dplyr)
 library(ggplot2)
 library(ggthemes)
 library(readr)
 
-#in .Rprofile
-# options(api_key = "BLABLABLA",
-#         api_secret = "BLABLABLA",
-#         access_token = "BLABLABLA",
-#         access_token_secret = "BLABLABLA")
-
-# editing .Rprofile
-# file.edit(".Rprofile")
-
-# restart R within Rstudio 
-# .rs.restartR()
-
-#The following (commented out) code is what Leo used to set up OAuth credentials. I don't think it's necessary to ever run these again.
-#install.packages("ROauth")
-#install.packages("streamR")
-#install.packages("devtools")
-#install.packages("rjson")
-#install.packages("bit64")
-#install.packages("httr")
-#install.packages("twitteR")
-#credential <- OAuthFactory$new(consumerKey=api_key,
-#                               consumerSecret=api_secret,
-#                               requestURL='https://api.twitter.com/oauth/request_token',
-#                               accessURL='https://api.twitter.com/oauth/access_token',
-#                               authURL='https://api.twitter.com/oauth/authorize')
-#options(RCurlOptions = list(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")))
-#download.file(url="http://curl.haxx.se/ca/cacert.pem", destfile="cacert_e.pem")
-#credential$handshake(cainfo="cacert_e.pem")
-#setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
-
-# setup for Emily
-#setwd(dir = "/Users/eblisker/Documents/HSPH/Courses/2016 Spring/BIO 260/Final/megabummer")
-#setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
-
-#### SEARCH TWITTER AND SAVE ####
-
-# searching Twitter, English language tweets only
-#tweets <- searchTwitter("megabus", n = 3500, lang="en")
-#tweets_df <- bind_rows(lapply(tweets, as.data.frame))
-
-# Export tweet pull as csv
-# write.csv(tweets_df_date, file = "tweets_df_date.csv") 
-
 #### DATA CLEANING AND EXPLORATORY ANALYSIS ####
 
 # load older tweets and merge datasets
 options(digits = 22) # to prevent tweet id from truncating
-#tweets_df_4_26 <- read_csv("megabus_tweets_df_4-26.csv")
-#tweets_df_4_27 <- read_csv("megabus_tweets_df_4-27.csv")
-#tweets_df_4_29 <- read_csv("megabus_tweets_df_4-29.csv")
-
-#q1 2015 data set
-#tweets_df_all <- read_csv("2015-q1 copy.csv")
 
 #full data set
 tweets_df_all <- read_csv("q12015-q22016 copy.csv")
@@ -75,57 +18,14 @@ tweets_df_all <- read_csv("q12015-q22016 copy.csv")
 #tweets_df_all <- tweets_df_all[sample(1:nrow(tweets_df_all), 10000, replace=FALSE),]
 
 names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favorites","mentions","hashtags")
-#Leo's tasks related to understanding python dataset:
-###determine whether the tweets obtained are all original vs. some are retweets. 
-   ###None have the same id but 56 of 4140 have the same text. So maybe these are retweets.
-###I basically duplicated a lot of Emily's code with minor modifications due to
-###different df structure for the April tweets, and gave things different variable names to reduce confusion.
-
-#tweets_df_all <- rbind(tweets_df_4_26, tweets_df_4_27, tweets_df_4_29)
-#tweets_df_all[,1] <- NULL # remove extra column
-
-#sapply(tweets_df_all, class)
-
-#tweets_df_all$created <- as.POSIXct(tweets_df_all$date, format= "%m/%d/%y %H:%M")
 tweets_df_all$date2 <- format(tweets_df_all$date, format="%m-%d-%y")
-
 tweets_df_all <- tweets_df_all %>% 
   filter(date2 != "12-31-14")
 tweets_df_all$time <- format(tweets_df_all$date, format="%H:%M:%S") 
-#View(tweets_df_all)
-#a <- Sys.time()
 tweets_df_all <- tweets_df_all %>%
   mutate(month = months(as.Date(date2,'%m-%d-%y'))) %>%
   mutate(weekend = weekdays(as.Date(date2,'%m-%d-%y'))) %>%
   mutate(weekend_binary = ifelse(weekend == "Saturday"|weekend=="Sunday"|weekend=="Friday", 1, 0))
-  
-
-#a - Sys.time()
-
-# New column to distinguish weekend vs. non-weekend
-#tweets_df_all$weekend <- "day"
-#tweets_df_all$weekend_binary <- 1
-#a <- Sys.time()
-#for(i in 1:nrow(tweets_df_all)) {
-#  tweets_df_all$weekend[i] <- weekdays(as.Date(tweets_df_all[i,]$date2,'%m-%d-%y'))
-#  if(tweets_df_all$weekend[i]=="Sunday"|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday"){#|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday") {
-#    tweets_df_all[i,]$weekend_binary <- 1
-#  } else {
-#    tweets_df_all[i,]$weekend_binary <- 0
-#  }
-#}
-#a - Sys.time()
-
-# explore favorited, retweet, and retweeted counts
-#table(tweets_df_all$favorited)
-#table(tweets_df_all$retweeted)
-#table(tweets_df_all$isRetweet)
-
-# filter out retweets
-#tweets_df_all <- tweets_df_all %>%
-#  filter(!isRetweet) %>%
-#  filter(!isRetweet)
-
 
 # filter out duplicates
 tweets_df_all <- tweets_df_all %>%
@@ -133,9 +33,6 @@ tweets_df_all <- tweets_df_all %>%
 #nrow(tweets_df_all)
 tweets_df_all <- tweets_df_all %>%
   distinct(text)
-#nrow(tweets_df_all)
-# make table of number of tweets per day
-#table(tweets_df_all$date2)
 
 # explore number of tweets per user including megabus handles
 #prolific_tweeters_all <- tweets_df_all %>% 
@@ -155,8 +52,6 @@ tweets_df_all = tweets_df_all[!grepl("megabus|megabusuk|MegabusHelp|megabusit|me
 # Histogram of number of tweets
 #ggplot(filter(prolific_tweeters, tweets>0), aes(tweets)) + 
 #  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Frequency") + theme_hc()
-
-
 
 # Plot the frequency of tweets over time in two hour windows
 # Modified from http://michaelbommarito.com/2011/03/12/a-quick-look-at-march11-saudi-tweets/
