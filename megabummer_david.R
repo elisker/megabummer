@@ -241,7 +241,7 @@ abline(0,0)
 
 # Evaluate homoscedasticity
 # non-constant error variance test
-install.packages('car')
+#install.packages('car')
 library(car)
 ncvTest(h1.lm)
 # We fail to reject the null hypothesis of homoskedastic errors
@@ -254,9 +254,10 @@ plot(h1.lm)
 
 # Normality of Residuals
 # qq plot for studentized resid
+
 qqPlot(h1.lm, main="QQ Plot")
 # distribution of studentized residuals
-#library(MASS)
+library(MASS)
 sresid <- studres(h1.lm) 
 hist(sresid, freq=FALSE, 
      main="Distribution of Studentized Residuals")
@@ -388,7 +389,7 @@ library(RColorBrewer)
 
 head(by_word)
 word_list <- by_word %>% dplyr::select(word)
-
+head(word_list)
 word_list_negatives <- subset(word_list, word %in% negatives$word)
 head(word_list_negatives)
 
@@ -511,24 +512,22 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
 
 # Word Cooccurence
 
-head(by_word)
 word_cooccurences <- by_word %>% dplyr::select(word, id)
 word_cooccurences <- subset(word_cooccurences, word %in% bing_megabus$word)
 
 word_cooccurences <- word_cooccurences %>%
-  pair_count(id, word, sort = TRUE)
+  pair_count(id, word, sort = TRUE) %>%
+  dplyr::filter(n>25)
 word_cooccurences
 
-#install.packages("igraph")
-
-if(!require(devtools)) {
-  install.packages('devtools')
-}
+#if(!require(devtools)) {
+#  install.packages('devtools')
+#}
 library(devtools)
 #is it necessary to run the below line if library(ggplot2) has already been called? -Leo
-devtools::install_github('hadley/ggplot2')
-devtools::install_github('thomasp85/ggforce')
-devtools::install_github('thomasp85/ggraph')
+#devtools::install_github('hadley/ggplot2')
+#devtools::install_github('thomasp85/ggforce')
+#devtools::install_github('thomasp85/ggraph')
 
 library(igraph)
 library(ggraph)
@@ -538,32 +537,18 @@ word_cooccurences %>%
   filter(n >= 10) %>%
   graph_from_data_frame() %>%
   ggraph(layout = "fr") +
-  geom_edge_link(aes(edge_alpha = n, edge_width = n)) +
+  geom_edge_link(aes(edge_alpha = n, edge_width = n), edge_colour="gray") +
   geom_node_point(color = "lightblue", size = 5) +
-  geom_node_text(aes(label = name), vjust = 1.8) +
+  geom_node_text(aes(label = name), vjust = 1.8, size=5) +
   theme_void()
 
-# gganimate setup
-.rs.restartR()
 
-# Load gganimate
-devtools::install_github("dgrtwo/gganimate")
+#####END LEO'S EDITS 2:45PM 5/4#####
 
 library(gapminder)
-library(ggplot2)
+
 theme_set(theme_bw())
-
-View(gapminder)
-
-p <- ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, color = continent, frame = year)) +
-  geom_point() +
-  scale_x_log10()
-
-library(gganimate)
-
-gg_animate(p)
-
-
+#library(copula)
 
 m <- as.matrix(word_list)
 # calculate the frequency of words and sort it by frequency
@@ -571,9 +556,9 @@ word.freq <- sort(rowSums(m), decreasing = T)
 # colors
 pal <- brewer.pal(9, "BuGn")[-(1:4)]
 
-m <- as.matrix(tdm)
+#m <- as.matrix(tdm)
 # calculate the frequency of words and sort it by frequency
-word.freq <- sort(rowSums(m), decreasing = T)
+word.freq <- sort(rowSums(m), by=word, decreasing = T)
 # colors
 pal <- brewer.pal(9, "BuGn")[-(1:4)]
 #plotting the wordcloud
