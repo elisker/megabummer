@@ -11,24 +11,21 @@ library(readr)
 options(digits = 22) # to prevent tweet id from truncating
 
 #full data set
-tweets_df_all <- read_csv("q12015-q22016 copy.csv")
-#get a subset of random lines from this to work with
-
-#subset of full data set
+tweets_df_all <- read_csv("Jan_2015-April_2016.csv")
+#get a subset of random lines from this to work with:
 #tweets_df_all <- tweets_df_all[sample(1:nrow(tweets_df_all), 10000, replace=FALSE),]
 
 
 names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favorites","mentions","hashtags")
-tweets_df_all$date2 <- format(tweets_df_all$date, format="%m-%d-%y")
 
-tweets_df_all <- tweets_df_all %>% 
-  filter(date2 != "12-31-14")
-
-tweets_df_all$time <- format(tweets_df_all$date, format="%H:%M:%S") 
 tweets_df_all <- tweets_df_all %>%
+  mutate(time=format(date, format="%H:%M:%S")) %>%
+  mutate(date2 = format(date, format="%m-%d-%y")) %>%
   mutate(month = months(as.Date(date2,'%m-%d-%y'))) %>%
   mutate(weekend = weekdays(as.Date(date2,'%m-%d-%y'))) %>%
-  mutate(weekend_binary = ifelse(weekend == "Saturday"|weekend=="Sunday"|weekend=="Friday", 1, 0))
+  mutate(weekend_binary = ifelse(weekend == "Saturday"|weekend=="Sunday"|weekend=="Friday", 1, 0)) %>% 
+  filter(date2 != "12-31-14") %>%
+  filter(date < "2016-04-01")
 
 #ggplot(tweets_df_all, aes(unclass(date))[1]) + geom_density()
 
@@ -40,28 +37,25 @@ tweets_df_all <- tweets_df_all %>%
   distinct(text)
 
 # explore number of tweets per user including megabus handles
-#prolific_tweeters_all <- tweets_df_all %>% 
-#  group_by(username) %>%
-#  summarise(tweets = n()) %>%
-#  arrange(desc(tweets)) 
+prolific_tweeters_all <- tweets_df_all %>% 
+  group_by(username) %>%
+  summarise(tweets = n()) %>%
+  arrange(desc(tweets)) 
 
 # filter out tweets from megabus operators
 tweets_df_all = tweets_df_all[!grepl("megabus|megabusuk|MegabusHelp|megabusit|megabusde|megabusGold", tweets_df_all$username),]
 
 # explore number of tweets per user excluding megabus handles
-#prolific_tweeters <- tweets_df_all %>% 
-#  group_by(username) %>%
-#  summarise(tweets = n()) %>%
-#  arrange(desc(tweets))
+prolific_tweeters_filtered <- tweets_df_all %>% 
+  group_by(username) %>%
+  summarise(tweets = n()) %>%
+  arrange(desc(tweets))
 
 # Histogram of number of tweets
-#ggplot(filter(prolific_tweeters, tweets>0), aes(tweets)) + 
-#  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Frequency") + theme_hc()
+ggplot(filter(prolific_tweeters_filtered, tweets>0), aes(tweets)) + 
+  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Frequency") + theme_hc()
 
-# Plot the frequency of tweets over time in two hour windows
-# Modified from http://michaelbommarito.com/2011/03/12/a-quick-look-at-march11-saudi-tweets/
-
-
+#Tweets per day
 ggplot(data=tweets_df_all, aes(x=as.Date(date2,'%m-%d-%y'))) + 
   geom_histogram(aes(fill=..count..), binwidth=1) + 
   scale_x_date("Date") + 
@@ -71,8 +65,6 @@ ggplot(data=tweets_df_all, aes(x=as.Date(date2,'%m-%d-%y'))) +
 tweets_df_all %>% group_by(date2) %>% count(date2, sort = TRUE) %>% filter(n>500)
 #The outlying days with low tweet volume are:
 tweets_df_all %>% group_by(date2) %>% count(date2, sort = TRUE) %>% filter(n<100)
-
-#TODO (Leo) get rid of dates april 23 2016 and after
 
 #TODO (Emily) a version of the above chart that is smooth
 #TODO (Ali) include the articles in the Rmd, do what Rafa does
@@ -93,7 +85,7 @@ library(tidyr)
 library(readr)
 
 by_word <- tweets_df_all %>%
-  select(text, id, date, date2, time, weekend, weekend_binary) %>%
+  dplyr::select(text, id, date, date2, time, weekend, weekend_binary, month) %>%
   unnest_tokens(word, text) 
 
 # look at most commonly tweeted words
@@ -107,7 +99,7 @@ megabus_lexicon <- read_csv("megabus_lexicon.csv")
 # create new dataframe of bing and megabummer sentiments
 bing_megabus <- megabus_lexicon %>%
   filter(lexicon %in% c("bing","megabummer")) %>%
-  select(-score)
+  dplyr::select(-score)
 head(bing_megabus %>% filter(lexicon=="megabummer"))
 
 
@@ -115,20 +107,20 @@ head(bing_megabus %>% filter(lexicon=="megabummer"))
 mb_sentiment <- by_word %>%
   inner_join(bing_megabus) %>%
   mutate(score = ifelse(sentiment == "positive", 1, -1))
-head(mb_sentiment %>% select(id,word,sentiment,score))
+head(mb_sentiment %>% dplyr::select(id,word,sentiment,score))
 
 # calculate score for each tweet
 library(data.table)
 dt <- data.table(mb_sentiment)
 
 
-mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, date, weekend_binary, date2, weekend, time), by = c("id")] )
-tweets_df_all_joiner <- tweets_df_all %>% select(id,text)
+mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, date, weekend_binary, date2, weekend, month), by = c("id")] )
+tweets_df_all_joiner <- tweets_df_all %>% dplyr::select(id,text)
 mb_sentiment_tweet <- left_join(mb_sentiment_tweet,data.table(tweets_df_all_joiner),by="id")
-head(mb_sentiment_tweet)
+View(mb_sentiment_tweet)
 
 #Creating data table of calendar dates, including weekend status, and tweet frequency and sentiment
-mb_sentiment_date <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N, weekend_binary, date), by = c("date2")] )
+mb_sentiment_date <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N, weekend_binary, weekend, month), by = c("date2")] )
 mb_sentiment_date <- mb_sentiment_date %>% filter(freq<500)
 head(mb_sentiment_date)
 
@@ -210,6 +202,18 @@ ggplot(data=mb_sentiment_date, aes(score_date)) +
 #ggplot(df, aes(x=day, y=meanscore)) +
 #  geom_bar(stat = "identity") +
 #  scale_y_continuous("Frequency")
+
+
+#Hyp. #0: sentiment ~ day of the week when stratifying on freq.
+fit <- lm(score_date ~ weekend + freq, data=mb_sentiment_date)
+summary(fit) # show results
+
+#Hyp. #0a: sentiment ~ month when stratifying on freq.
+fit <- lm(score_date ~ month + freq, data=mb_sentiment_date)
+summary(fit) # show results
+
+#REJECT THE NULL, conclusion: that both tweet volume for a day AND weekend_binary
+#are both signif associated with tweet_score(average for day).
 
 
 #Hyp. #1: tweet sentiment on low volume days = on high volume days
