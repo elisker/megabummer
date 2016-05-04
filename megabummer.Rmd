@@ -10,19 +10,25 @@ output: html_document
 
 Social media users leave digital traces that can be leveraged to guide consumer purchasing decisions. Twitter users, in particular, provide temporal data that can be analyzed to develop a more precise understanding of users’ perspectives or sentiments about a service, company, or product. This information, in turn, can be shared with the public to allow customers to make decisions based on crowd-sourced knowledge. It may also even help the service provider understand how they can improve their services.
 
-Imagine it is Friday in July and you are finishing up a long week at the office. The clock reads 4:00pm and you quickly race to pack up your work station. You need to get downtown to catch the 5pm MegaBus from NYC to Washington, DC. You are ready to start the weekend and have plans at 10pm in downtown DC. You naviate the NYC subway and break a sweat walking quickly down 42nd Street, hoping that you are early enough to score an aisle seat. As you approach the bus stop you come into view of your worst nightmare: a line with hundreds of angry Megabus passengers waiting with no bus in sight. As you walk towards the end of the line another passenger mentions that the 3:30pm bus hasn't arrived yet. A Megabus employee tells you he has no idea when the 5pm bus will depart ("Who knows.."). It is 90 degrees. You sweating profusely. You feel helpless. A wronged consumer with no recourse. Then you remember there exists a social media site called Twitter...
+Imagine it is Friday in July and you are finishing up a long week at the office. The clock reads 4:00pm and you quickly race to pack up your work station. You need to get downtown to catch the 5pm MegaBus from NYC to Washington, DC. You are ready to start the weekend and have plans at 10pm in downtown DC. You naviate the NYC subway and break a sweat walking quickly down 34th Street, hoping that you are early enough to score an aisle seat. As you approach the bus stop you come into view of your worst nightmare: a line with hundreds of angry Megabus passengers waiting with no bus in sight. As you walk towards the end of the line another passenger mentions that the 3:30pm bus hasn't arrived yet. A Megabus employee tells you he has no idea when the 5pm bus will depart ("Who knows..."). It is 90 degrees, you are sweating profusely, and you will surely miss your evening plans. You feel helpless. A wronged consumer with no recourse. Then you remember a social media site called Twitter...
 
-Based on our personal experience and the experience, we aim to analyze recent tweets to understand the degree of negative experience among users of the low-cost bus company, Megabus, over time. While Megabus is an inexpensive and convenient transportation option with many buses departing major cities each day, we hypothesize that some Megabus routes and departure times may be more reliable, i.e., busses have fewer breakdowns and delays, than others. Using social media to understanding the predictors of negative Megabus experience, we may be able to offer future bus riders information that will help them avoid these experiences. 
-
-Our primary goal is to understand the determinants of negative experience on Megabus, with a focus on temporality, in order to provide Megabus riders with information on the likelihood of service interruptions based on date and time.
+Based on our personal experience and the experience of others, we aim to analyze recent tweets to understand the degree of positive and negative sentiment among users of the low-cost bus company, Megabus, over time. While Megabus is an inexpensive and convenient transportation option with many buses departing major cities each day, we hypothesized that some days or times of year may be more reliable, i.e., buses have fewer breakdowns and delays, than others. Using social media, data visualization and statistics we provide an informative and entertaining sentiment analysis of Megabus experiences from January 1, 2016 to April 1, 2016. Our work offers future bus riders information on the type of experience they can expect when riding the Megabus.
 
 ### Related Work: 
 
-TO BE COMPLETED: Anything that inspired you, such as a paper, a web site, or something we discussed in class.
+Sentiment analysis performed by our very own TA, David Robinson provided initial guiding inspiration for this this work (https://github.com/juliasilge/tidytext).
+
+We were also inspired by sentiment analysis of Twitter data related to current events. Some examples of other analyses that we explored includes: http://www.wired.com/2015/02/best-worst-public-transit-systems-according-twitter/#slide-2 and https://medium.com/mit-media-lab/introducing-tonar-3bf161cba369#.gixrkibqj
 
 ### Initial Questions: 
 
-TO BE COMPLETED: What questions are you trying to answer? How did these questions evolve over the course of the project? What new questions did you consider in the course of your analysis?
+As a team, we were originally interested in building a predictive model for Megabus experience based on time of day, location and bus route. Based on the data that we were able to collect from Twitter, these questions evolved to focus on the relationship between Megabus passenger sentiment, the volume of Megabus tweets, day of the week, whether the tweet was posted on a weekday (Monday-Thursday) or a weekend (Friday-Sunday), and month of the year.  
+
+The questions we have answered as part of this analysis include the following:
+1. How can we most effectively scrape Twitter for data related to Megabus sentiment?
+2. What is overall Megabus sentiment and volume of Megabus tweets during the period from January 1, 2015 to April 1, 2016?
+3. How does Megabus sentiment and volume of tweets differ based on day of the week and month of the year?
+4. What is the realtionship between volume of Megabus tweets on a given day and the overall sentiment we expect to see?
 
 ### Data: 
 
