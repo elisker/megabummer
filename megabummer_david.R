@@ -53,7 +53,10 @@ prolific_tweeters_filtered <- tweets_df_all %>%
 
 # Histogram of number of tweets
 ggplot(filter(prolific_tweeters_filtered, tweets>0), aes(tweets)) + 
-  geom_histogram(binwidth = 1) + xlab("Number of megabus tweets per user") + ylab("Frequency") + theme_hc()
+  geom_histogram(binwidth = 1) + 
+  xlab("Number of megabus tweets per user") + 
+  ylab("Frequency") + 
+  theme_hc()
 
 #Tweets per day
 ggplot(data=tweets_df_all, aes(x=as.Date(date2,'%m-%d-%y'))) + 
@@ -208,13 +211,20 @@ ggplot(data=mb_sentiment_date, aes(score_date)) +
 fit <- lm(score_date ~ weekend + freq, data=mb_sentiment_date)
 summary(fit) # show results
 
+#REJECT THE NULL, conclusion: The volume of tweets on a given day is a statistically 
+# significant predictor of the average daily sentiment score. For every additional tweet, 
+# we would expect a 0.001 decrease in average daily sentiment score. The days of the week are 
+# not significantly associated with the average daily sentiment score. 
+
 #Hyp. #0a: sentiment ~ month when stratifying on freq.
 fit <- lm(score_date ~ month + freq, data=mb_sentiment_date)
 summary(fit) # show results
 
-#REJECT THE NULL, conclusion: that both tweet volume for a day AND weekend_binary
-#are both signif associated with tweet_score(average for day).
-
+#REJECT THE NULL, conclusion: When we stratify on volume of tweets, we see that month is a statistically 
+# significant predictor of the average daily sentiment score in some cases. The months of December, June,
+# and October are statistically significantly associated with average daily sentiment score. Looking at the month of
+# December, for example, December we would expect, on average, a 0.127 decrease in average daily sentiment for 
+# every additional tweet.
 
 #Hyp. #1: tweet sentiment on low volume days = on high volume days
 h1.lm <- lm(score_date ~ freq, data = mb_sentiment_date)
@@ -224,8 +234,12 @@ summary(h1.lm)
 # that for every additional tweet, we would expect a 0.001 decrease in average daily sentiment score.
 
 # graph tweet sentiment as a function of tweet volume
+#echart
 ggplot(data=mb_sentiment_date, aes(x=freq, y=score_date)) + 
-  geom_line()
+  geom_line() + xlab("Number of megabus tweets") + 
+  ylab("Tweet sentiment score") + 
+  ggtitle("Tweet sentiment as a function of tweet volume") + 
+  theme_hc()
 #Commentary:
 #We have found a highly statistically significant trend.
 #It is a huge data set and the association 
@@ -250,17 +264,15 @@ library(car)
 ncvTest(h1.lm)
 # We fail to reject the null hypothesis of homoskedastic errors
 
-# Diagnostic plots
-layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
-plot(h1.lm)
-#TODO (Emily and Ali) please interpret these and remove overlapping efforts / graphs
-
-
 # Normality of Residuals
-# qq plot for studentized resid
-
+# As demonstrated in the QQ-Plot below of the studendized residuals, the
+# linearity of the points suggests that the residuals are normally distributed and further
+# confirms that linear regression is appropriate for our dataset.
 qqPlot(h1.lm, main="QQ Plot")
+
 # distribution of studentized residuals
+# We can also use a combination of a density plot and histogram to visualize that the
+# normality assumption holds true as demonstrated below.
 library(MASS)
 sresid <- studres(h1.lm) 
 hist(sresid, freq=FALSE, 
@@ -276,25 +288,33 @@ the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 1)
 not_the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 0)
 var.test(the_weekend$score_tweet,not_the_weekend$score_tweet)#variances are equal if p-value > 0.05
 t.test(the_weekend$score_tweet,not_the_weekend$score_tweet)#,var.equal = TRUE)
-#Conclusion: When looking at all weekend vs weekday tweet scores as one large group, 
-#mean tweet score on weekend is significantly less than mean tweet score on non-weekend, 
+#Conclusion: When looking at all weekend vs weekday tweet scores as one large group, the
+#mean tweet score on weekends is not significantly different than the mean tweet score on non-weekends, 
 #*without* stratifying on tweet volume.
+#echart
 ggplot(mb_sentiment_tweet, aes(x=weekend_binary, y=score_tweet, group=weekend_binary)) +
   geom_boxplot(aes(fill=weekend_binary)) +
+  xlab("Non-weekend vs weekend") + 
+  ylab("Tweet sentiment score") + 
+  ggtitle("Variation in tweet sentiment between weekends and non-weekends") + 
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
 
 #Hyp. #3: sentiment weekend = sentiment weekday 
 #(looking at weekend and nonweekend as two large groups of DAILY AVERAGES
-#of gweet scores)
+#of tweet scores)
 the_weekend_date = mb_sentiment_date %>% filter(weekend_binary == 1)
 not_the_weekend_date = mb_sentiment_date %>% filter(weekend_binary == 0)
 var.test(the_weekend_date$score_date,not_the_weekend_date$score_date)#variances are equal if p-value > 0.05
 t.test(the_weekend_date$score_date,not_the_weekend_date$score_date)#,var.equal = TRUE)
-#Conclusion: Mean of daily tweet scores on weekend is significantly less than 
-#mean tweet score on non-weekend, *without* stratifying on tweet volume.
+#Conclusion: The mean of daily tweet scores on weekends is significantly less than the
+#mean tweet score on non-weekends, *without* stratifying on tweet volume.
+#echart
 ggplot(mb_sentiment_date, aes(x=weekend_binary, y=score_date, group=weekend_binary)) +
   geom_boxplot(aes(fill=weekend_binary)) +
+  xlab("Non-weekend vs. weekend") + 
+  ylab("Tweet sentiment score") + 
+  ggtitle("Variation in tweet sentiment between weekends and non-weekends") + 
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
 
@@ -302,17 +322,22 @@ ggplot(mb_sentiment_date, aes(x=weekend_binary, y=score_date, group=weekend_bina
 #[multiple linear regression]
 fit <- lm(score_date ~ weekend_binary + freq, data=mb_sentiment_date)
 summary(fit) # show results
-#REJECT THE NULL, conclusion: that both tweet volume for a day AND weekend_binary
-#are both signif associated with tweet_score(average for day).
+#DO NOT HAVE ENOUGH EVIDENCE TO REJECT THE NULL, conclusion:  The weekend is not a statistically signiificant predictor 
+# oF average daily sentiment score when we stratify on tweet volume.
 
 #Hyp. #5: tweet volume weekend = tweet volume weekday
 
 var.test(the_weekend_date$freq,not_the_weekend_date$freq)
 t.test(the_weekend_date$freq,not_the_weekend_date$freq)
 
-#REJECT THE NULL (STRONGLY), conclude that tweet volume weekend != tweet volume weekday
+#REJECT THE NULL (STRONGLY), conclude that tweet volume on weekends is statistically differrent than 
+# tweet volume on weekdays. 
+#echart
 ggplot(mb_sentiment_date, aes(x=weekend_binary, y=freq, group=weekend_binary)) +
   geom_boxplot(aes(fill=weekend_binary)) +
+  xlab("Non-weekend vs. weekend") + 
+  ylab("Tweet volume") + 
+  ggtitle("Variation in tweet volume between weekends and non-weekends") + 
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
 #TODO (Leo) fix weekend_binary scale so that it makes sense, hide the x axis, legend with two colors
@@ -323,15 +348,19 @@ holiday = mb_sentiment_holidays %>% filter(holiday == 1)
 not_holiday = mb_sentiment_holidays %>% filter(holiday == 0)
 var.test(holiday$score_date,not_holiday$score_date)#variances are equal if p-value > 0.05
 t.test(holiday$score_date,not_holiday$score_date,var.equal = TRUE)
-#There is no association between holiday and tweet sentiment WITHOUT stratifying on volume.
+#There is no statistically significant association between holiday and tweet sentiment when we do not stratify on volume.
 
 #Stratifying on volume
 #[multiple linear regression]
 fit <- lm(score_date ~ holiday + freq, data=mb_sentiment_holidays)
 summary(fit) # show results
-#There is no association between holiday and tweet sentiment WITH stratifying on volume.
+#When we stratify on tweet volume, we still see that there is no statistically significant association between holiday and tweet sentiment.
+#echart
 ggplot(mb_sentiment_holidays, aes(x=holiday, y=score_date, group=holiday)) +
   geom_boxplot(aes(fill=holiday)) +
+  xlab("Non-holiday vs. holiday") + 
+  ylab("Tweet sentiment score") + 
+  ggtitle("Variation in tweet sentiment score between holidays and non-holidays") + 
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
 
