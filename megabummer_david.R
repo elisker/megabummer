@@ -65,14 +65,14 @@ options(digits = 22) # to prevent tweet id from truncating
 #tweets_df_4_29 <- read_csv("megabus_tweets_df_4-29.csv")
 
 #q1 2015 data set
-tweets_df_all <- read_csv("2015-q1 copy.csv")
+#tweets_df_all <- read_csv("2015-q1 copy.csv")
 
 #full data set
-#tweets_df_all <- read_csv("q12015-q22016 copy.csv")
+tweets_df_all <- read_csv("q12015-q22016 copy.csv")
 #get a subset of random lines from this to work with
 
 #subset of full data set
-#tweets_df_sample <- tweets_df_all[sample(1:nrow(tweets_df_all), 30000, replace=FALSE),]
+#tweets_df_all <- tweets_df_all[sample(1:nrow(tweets_df_all), 10000, replace=FALSE),]
 
 names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favorites","mentions","hashtags")
 #Leo's tasks related to understanding python dataset:
@@ -92,19 +92,25 @@ tweets_df_all <- tweets_df_all %>%
   filter(date2 != "12-31-14")
 tweets_df_all$time <- format(tweets_df_all$date, format="%H:%M:%S") 
 #View(tweets_df_all)
+a <- Sys.time()
+tweets_df_all %>%
+  mutate(weekend = weekdays(as.Date(date2,'%m-%d-%y'))) %>%
+  mutate(weekend_binary = ifelse(weekend == "Saturday"|weekend=="Sunday"|weekend=="Friday", 1, 0))
+a - Sys.time()
 
 # New column to distinguish weekend vs. non-weekend
-tweets_df_all$weekend <- "day"
-tweets_df_all$weekend_binary <- 1
-
-for(i in 1:nrow(tweets_df_all)) {
-  tweets_df_all$weekend[i] <- weekdays(as.Date(tweets_df_all[i,]$date2,'%m-%d-%y'))
-  if(tweets_df_all$weekend[i]=="Sunday"|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday"){#|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday") {
-    tweets_df_all[i,]$weekend_binary <- 1
-  } else {
-    tweets_df_all[i,]$weekend_binary <- 0
-  }
-}
+#tweets_df_all$weekend <- "day"
+#tweets_df_all$weekend_binary <- 1
+#a <- Sys.time()
+#for(i in 1:nrow(tweets_df_all)) {
+#  tweets_df_all$weekend[i] <- weekdays(as.Date(tweets_df_all[i,]$date2,'%m-%d-%y'))
+#  if(tweets_df_all$weekend[i]=="Sunday"|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday"){#|tweets_df_all$weekend[i]=="Saturday"|tweets_df_all$weekend[i]=="Friday") {
+#    tweets_df_all[i,]$weekend_binary <- 1
+#  } else {
+#    tweets_df_all[i,]$weekend_binary <- 0
+#  }
+#}
+#a - Sys.time()
 
 # explore favorited, retweet, and retweeted counts
 #table(tweets_df_all$favorited)
