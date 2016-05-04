@@ -65,6 +65,12 @@ library(tm)
 library(SnowballC)
 library(wordcloud)
 library(RColorBrewer)
+
+library(devtools)
+
+library(igraph)
+library(ggraph)
+library(gapminder)
 ```
 ####Loading and wrangling the full data set
 ```{r}
@@ -277,7 +283,47 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
           max.words=200, random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 
+##### Positive Word Cloud #####
+word_list_positives <- Corpus(VectorSource(word_list_positives))
+#inspect(word_list_positives)
 
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_positives <- tm_map(word_list_positives, toSpace, "/")
+word_list_positives <- tm_map(word_list_positives, toSpace, "@")
+word_list_positives <- tm_map(word_list_positives, toSpace, "\\|")
+word_list_positives <- tm_map(word_list_positives, removeWords, c("megabus", "the", "and", "https", "you", "t.co", "for", "this", "bus", "that")) 
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_positives)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 10)
+
+# Word Cloud (Positive)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+# Word Cooccurence
+
+word_cooccurences <- by_word %>% dplyr::select(word, id)
+word_cooccurences <- subset(word_cooccurences, word %in% bing_megabus$word)
+
+word_cooccurences <- word_cooccurences %>%
+  pair_count(id, word, sort = TRUE) %>%
+  dplyr::filter(n>25)
+
+set.seed(2016)
+word_cooccurences %>%
+  filter(n >= 10) %>%
+  graph_from_data_frame() %>%
+  ggraph(layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n, edge_width = n), edge_colour="gray") +
+  geom_node_point(color = "lightblue", size = 5) +
+  geom_node_text(aes(label = name), vjust = 1.8, size=5) +
+  theme_void()
 ```
 
 
