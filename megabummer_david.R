@@ -17,15 +17,20 @@ tweets_df_all <- read_csv("q12015-q22016 copy.csv")
 #subset of full data set
 #tweets_df_all <- tweets_df_all[sample(1:nrow(tweets_df_all), 10000, replace=FALSE),]
 
+
 names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favorites","mentions","hashtags")
 tweets_df_all$date2 <- format(tweets_df_all$date, format="%m-%d-%y")
+
 tweets_df_all <- tweets_df_all %>% 
   filter(date2 != "12-31-14")
+
 tweets_df_all$time <- format(tweets_df_all$date, format="%H:%M:%S") 
 tweets_df_all <- tweets_df_all %>%
   mutate(month = months(as.Date(date2,'%m-%d-%y'))) %>%
   mutate(weekend = weekdays(as.Date(date2,'%m-%d-%y'))) %>%
   mutate(weekend_binary = ifelse(weekend == "Saturday"|weekend=="Sunday"|weekend=="Friday", 1, 0))
+
+#ggplot(tweets_df_all, aes(unclass(date))[1]) + geom_density()
 
 # filter out duplicates
 tweets_df_all <- tweets_df_all %>%
@@ -56,11 +61,26 @@ tweets_df_all = tweets_df_all[!grepl("megabus|megabusuk|MegabusHelp|megabusit|me
 # Plot the frequency of tweets over time in two hour windows
 # Modified from http://michaelbommarito.com/2011/03/12/a-quick-look-at-march11-saudi-tweets/
 
-minutes <- 1440
-ggplot(data=tweets_df_all, aes(x=date)) + 
-  geom_histogram(aes(fill=..count..), binwidth=60*minutes) + 
-  scale_x_datetime("Date") + 
+
+ggplot(data=tweets_df_all, aes(x=as.Date(date2,'%m-%d-%y'))) + 
+  geom_histogram(aes(fill=..count..), binwidth=1) + 
+  scale_x_date("Date") + 
   scale_y_continuous("Frequency")
+
+#The outlying days with high tweet volume are:
+tweets_df_all %>% group_by(date2) %>% count(date2, sort = TRUE) %>% filter(n>500)
+#The outlying days with low tweet volume are:
+tweets_df_all %>% group_by(date2) %>% count(date2, sort = TRUE) %>% filter(n<100)
+
+#TODO (Leo) get rid of dates april 23 2016 and after
+
+#TODO (Emily) a version of the above chart that is smooth
+#TODO (Ali) include the articles in the Rmd, do what Rafa does
+#There were some outliers in tweet volume. We investigated Google to see if anything notable happened on days where tweet volume exceeded 500.
+#April 13, 2015: ‘Hero’ passenger subdues gunman who may have tried to take over Megabus https://www.washingtonpost.com/news/morning-mix/wp/2015/05/13/hero-passenger-subdues-gunman-who-may-have-tried-to-take-over-megabus/
+#May 13, 2015: 19 injured in Megabus crash on I-65 in Indiana http://www.usatoday.com/story/news/nation/2015/04/13/megabus-crash-indiana/25707085/
+#February 21, 2016: The Day My Megabus Caught Fire https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=newssearch&cd=1&ved=0ahUKEwjw6rqk18DMAhWLbT4KHacICLYQqQIIHCgAMAA&url=http%3A%2F%2Fwww.nytimes.com%2F2016%2F02%2F22%2Ftravel%2Fthe-day-my-megabus-caught-fire.html&usg=AFQjCNGn4yumdmj3dXBvebbspQf6saQwBw&sig2=x1ans1gQL3jwUhE4p5FEEg
+
 
 ###### SENTIMENT ANALYSIS ######
 
@@ -69,56 +89,13 @@ library(devtools)
 library(tidytext)
 # other text mining: tm, quanteda
 
-#' Tidytext contains three lexicons for sentiment analysis are combined here in a tidy data frame.
-#' The lexicons are the NRC Emotion Lexicon from Saif Mohammad and Peter Turney,
-#' the sentiment lexicon from Bing Liu and collaborators, and the lexicon of
-#' Finn Arup Nielsen. Words with non-ASCII characters were removed from the
-#' lexicons.
-
-#' @format A data frame with 23,165 rows and 4 variables:
-#' \describe{
-#'  \item{word}{An English word}
-#'  \item{sentiment}{One of either positive, negative, anger, anticipation,
-#'  disgust, fear, joy, sadness, surprise, trust, or \code{NA}. The Bing lexicon
-#'  has positive/negative, the NRC lexicon has all options except \code{NA}, and
-#'  the AFINN lexicon has only \code{NA}.}
-#'  \item{lexicon}{The source of the sentiment for the word. One of either
-#'  "nrc", "bing", or "AFINN".}
-#'  \item{score}{A numerical score for the sentiment. This value is \code{NA}
-#'  for the Bing and NRC lexicons, and runs between -5 and 5 for the AFINN
-#'  lexicon.}
-#' }
-#'
-#' @source \url{http://saifmohammad.com/WebPages/lexicons.html}
-#' \url{https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html}
-#' \url{http://www2.imm.dtu.dk/pubdb/views/publication_details.php?id=6010}
-
-# original code from David below
-
-#bing <- sentiments %>%
-#  filter(lexicon == "bing") %>%
-#  select(-score)
-
-# Supplemented bing sentiment lexicon with 57 megabus or transportation specific sentiments. These additional negative and positive words
-# were identified  by manually reviewing a random sample from 2900 tweets on megabus queried on 4/20/2016, following similar methods described 
-# here: http://www.wired.com/2015/02/best-worst-public-transit-systems-according-twitter/. Negative and positive words not already
-# included in the bing lexicon, such as those related to megabus and or transportation experience specifically, were added to the 
-# lexicon.
-
-# Notes on sentiment changes from bing: 
-# uneventful: changed from negative to positive
-# cheap: changed from negative to positive
-# like: removed
-
 library(tidyr)
 library(readr)
 
 by_word <- tweets_df_all %>%
   select(text, id, date, date2, time, weekend, weekend_binary) %>%
   unnest_tokens(word, text) 
-#by_word <- tweets_df_all %>%
-# select(text, id, date2) %>%
-#  unnest_tokens(word, text) 
+
 
 
 # look at most commonly tweeted words
