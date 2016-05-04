@@ -70,6 +70,9 @@ tweets_df_all <- read_csv("2015-q1 copy.csv")
 #full data set
 #tweets_df_all <- read_csv("q12015-q22016 copy.csv")
 
+#subset of full data set
+#tweets_df_sample <- tweets_df_all[sample(1:nrow(tweets_df_all), 30000, replace=FALSE),]
+
 names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favorites","mentions","hashtags")
 #Leo's tasks related to understanding python dataset:
 ###determine whether the tweets obtained are all original vs. some are retweets. 
@@ -310,13 +313,42 @@ mb_sentiment_date$month <- month(as.POSIXlt(mb_sentiment_date$date2, format="%m-
 h1.lm <- lm(score_date ~ freq, data = mb_sentiment_date)
 summary(h1.lm)
 #REJECT THE NULL (STRONGLY), conclude that tweet sentiment on low volume days > tweet sentiment on high volume days
+# The volume of tweets on a given day is a statistically significant predictor of the average daily sentiment score and
+# that for every additional tweet, we would expect a 0.001 decrease in average daily sentiment score.
+
 # graph tweet sentiment as a function of tweet volume
 ggplot(data=mb_sentiment_date, aes(x=freq, y=score_date)) + 
   geom_line()
 
+score_date.res = resid(h1.lm)
+plot(mb_sentiment_date$freq, score_date.res, 
+ylab="Residuals", xlab="Number of Tweets", 
+main="Tweets and Megabus Sentiment")
+abline(0,0)
+                
+
+# Evaluate homoscedasticity
+# non-constant error variance test
+ncvTest(h1.lm)
+# We fail to reject the null hypothesis of homoskedastic errors
+
 # Diagnostic plots
 layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
 plot(h1.lm)
+
+#install.packages("car")
+library(car)
+# Normality of Residuals
+# qq plot for studentized resid
+qqPlot(h1.lm, main="QQ Plot")
+# distribution of studentized residuals
+#library(MASS)
+sresid <- studres(h1.lm) 
+hist(sresid, freq=FALSE, 
+     main="Distribution of Studentized Residuals")
+xfit<-seq(min(sresid),max(sresid),length=40) 
+yfit<-dnorm(xfit) 
+lines(xfit, yfit)
 
 #Hyp. #2: sentiment weekend = sentiment weekday 
 #(looking at weekend and nonweekend as two large groups of tweet scores)
