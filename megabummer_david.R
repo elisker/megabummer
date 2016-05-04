@@ -88,15 +88,19 @@ names(tweets_df_all) <- c("id","username","text","date","geo","retweets","favori
 
 #tweets_df_all$created <- as.POSIXct(tweets_df_all$date, format= "%m/%d/%y %H:%M")
 tweets_df_all$date2 <- format(tweets_df_all$date, format="%m-%d-%y")
+
 tweets_df_all <- tweets_df_all %>% 
   filter(date2 != "12-31-14")
 tweets_df_all$time <- format(tweets_df_all$date, format="%H:%M:%S") 
 #View(tweets_df_all)
-a <- Sys.time()
-tweets_df_all %>%
+#a <- Sys.time()
+tweets_df_all <- tweets_df_all %>%
+  mutate(month = months(as.Date(date2,'%m-%d-%y'))) %>%
   mutate(weekend = weekdays(as.Date(date2,'%m-%d-%y'))) %>%
   mutate(weekend_binary = ifelse(weekend == "Saturday"|weekend=="Sunday"|weekend=="Friday", 1, 0))
-a - Sys.time()
+  
+
+#a - Sys.time()
 
 # New column to distinguish weekend vs. non-weekend
 #tweets_df_all$weekend <- "day"
