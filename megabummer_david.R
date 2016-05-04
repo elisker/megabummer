@@ -96,34 +96,43 @@ by_word <- tweets_df_all %>%
   select(text, id, date, date2, time, weekend, weekend_binary) %>%
   unnest_tokens(word, text) 
 
-
-
 # look at most commonly tweeted words
 by_word_count <- by_word %>%
   count(word, sort = TRUE) 
+head(by_word_count)
 
 megabus_lexicon <- read_csv("megabus_lexicon.csv")
+
 
 # create new dataframe of bing and megabummer sentiments
 bing_megabus <- megabus_lexicon %>%
   filter(lexicon %in% c("bing","megabummer")) %>%
   select(-score)
+head(bing_megabus %>% filter(lexicon=="megabummer"))
+
 
 # join tweets with sentiment and add score column
 mb_sentiment <- by_word %>%
   inner_join(bing_megabus) %>%
   mutate(score = ifelse(sentiment == "positive", 1, -1))
+head(mb_sentiment %>% select(id,word,sentiment,score))
 
 # calculate score for each tweet
-options(digits = 22)
 library(data.table)
 dt <- data.table(mb_sentiment)
 
 
 mb_sentiment_tweet <- unique(dt[,list(score_tweet = sum(score), freq = .N, date, weekend_binary, date2, weekend, time), by = c("id")] )
+tweets_df_all_joiner <- tweets_df_all %>% select(id,text)
+mb_sentiment_tweet <- left_join(mb_sentiment_tweet,data.table(tweets_df_all_joiner),by="id")
+head(mb_sentiment_tweet)
 
-mb_sentiment_date <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N, weekend_binary), by = c("date2")] )
+#Creating data table of calendar dates, including weekend status, and tweet frequency and sentiment
+mb_sentiment_date <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N, weekend_binary, date), by = c("date2")] )
 mb_sentiment_date <- mb_sentiment_date %>% filter(freq<500)
+head(mb_sentiment_date)
+
+#Creating data table of calendar dates and tweet frequency and sentiment with holiday status
 mb_sentiment_holidays <- mb_sentiment_date %>% 
   mutate(holiday = ifelse(date2 == "01-01-15" |
                             date2 == "01-19-15" |
@@ -142,14 +151,18 @@ mb_sentiment_holidays <- mb_sentiment_date %>%
                             date2 == "02-15-16",1,
                           0
                             ))
-#mb_sentiment_day <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N), by = c("weekend")] )
+head(mb_sentiment_holidays)
+
+#TODO probably delete this line #mb_sentiment_day <- unique(mb_sentiment_tweet[,list(score_date = round(mean(score_tweet),2), freq = .N), by = c("weekend")] )
 
 # summary stats
 library(Hmisc)
-#mb_sentiment_tweet %>% filter(score_tweet == 4)
-#tweets_df_all %>% filter(id==574126622481211392) %>% select(text)
+
+#Exploratory Data Analysis
+#TODO optionally (Leo) make this less redundant
 describe(mb_sentiment_tweet)
 describe(mb_sentiment_date)
+describe(mb_sentiment_holidays)
 
 # As you can see, the line graph of the sentiment score over time is not that useful. 
 ggplot(data=mb_sentiment_tweet, aes(x=date, y=score_tweet)) + 
@@ -157,22 +170,29 @@ ggplot(data=mb_sentiment_tweet, aes(x=date, y=score_tweet)) +
 
 # Instead of fitting a line, we can stratify by date and compute the mean sentiment score,referred to as _bin smoothing_. 
 # Smoothing is useful for this analysis as it is designed to estimate $f(x)$ when the shape is unknown, but assumed to be _smooth_.  
-# When we group the data points into strata, days in this case, that are expected to have similar expectations and calculate the average
+# When we group the data points into strata, days in this case, that are expected to have similar sentiments and calculate the average
 # or fit a simple model in each strata. We assume the curve is approximately constant within the bin  and that all the sentiment scores 
 # in that bin have the same expected value. 
 ggplot(data=mb_sentiment_tweet, aes(x=date, y=score_tweet)) + 
   geom_smooth()
 
+#TODO: put the smoothed version of frequency by date right here to compare it to the tweet sentiment over time
+#looking at volume in the same way:
+
+#TODO (Emily): Plz smooth this
+#TODO if we can get around to it: show it like a bell curve and indicate standard deviation lines
 # histogram of all sentiment scores (tweet)
 ggplot(data=mb_sentiment_tweet, aes(score_tweet)) + 
   geom_histogram(binwidth = 1)
+#Notice that there are few tweets with sentiment score zero. This indicates a bimodal distribution.
+#This makes sense because why would you tweet a neutral tweet.
 
 # histogram of all sentiment scores (day)
 ggplot(data=mb_sentiment_date, aes(score_date)) + 
   geom_histogram(binwidth = 0.1)
 
-# Adding month in case we want to look at variations by month
-mb_sentiment_date$month <- month(as.POSIXlt(mb_sentiment_date$date2, format="%m-%d-%y"))
+# Adding month in case we want to look at variations by month (month was added above but leaving this code here just in case)
+#mb_sentiment_date$month <- month(as.POSIXlt(mb_sentiment_date$date2, format="%m-%d-%y"))
 
 #ggplot(data=mb_sentiment_date, aes(x=month, y=score_date)) + 
 #  geom_boxplot()#does this work? I had to write geom_boxplot()
@@ -202,25 +222,36 @@ summary(h1.lm)
 # graph tweet sentiment as a function of tweet volume
 ggplot(data=mb_sentiment_date, aes(x=freq, y=score_date)) + 
   geom_line()
+#Commentary:
+#We have found a highly statistically significant trend.
+#It is a huge data set and the association 
+#is not strong (small magnitude, a lot of variance).
+#In order to explore the meaning and practical application of the relationship,
+#we would need to further examine days with different sentiments of tweets and 
+#consider whether the difference as measured by our scoring system is meaningful.
 
 score_date.res = resid(h1.lm)
 plot(mb_sentiment_date$freq, score_date.res, 
 ylab="Residuals", xlab="Number of Tweets", 
 main="Tweets and Megabus Sentiment")
 abline(0,0)
+#There is homoscadesticity of residuals, therefore linear regression is
+#an appropriate method of analysis.
                 
 
 # Evaluate homoscedasticity
 # non-constant error variance test
+install.packages('car')
+library(car)
 ncvTest(h1.lm)
 # We fail to reject the null hypothesis of homoskedastic errors
 
 # Diagnostic plots
 layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
 plot(h1.lm)
+#TODO (Emily and Ali) please interpret these and remove overlapping efforts / graphs
 
-#install.packages("car")
-library(car)
+
 # Normality of Residuals
 # qq plot for studentized resid
 qqPlot(h1.lm, main="QQ Plot")
@@ -266,9 +297,8 @@ ggplot(mb_sentiment_date, aes(x=weekend_binary, y=score_date, group=weekend_bina
 #[multiple linear regression]
 fit <- lm(score_date ~ weekend_binary + freq, data=mb_sentiment_date)
 summary(fit) # show results
-#DO NOT REJECT THE NULL, conclusion: that the association between weekend and tweet sentiment
-#is *entirely* due to volume
-#I'm not sure how to graphically represent muliple linear regression.
+#REJECT THE NULL, conclusion: that both tweet volume for a day AND weekend_binary
+#are both signif associated with tweet_score(average for day).
 
 #Hyp. #5: tweet volume weekend = tweet volume weekday
 
@@ -280,7 +310,7 @@ ggplot(mb_sentiment_date, aes(x=weekend_binary, y=freq, group=weekend_binary)) +
   geom_boxplot(aes(fill=weekend_binary)) +
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
-
+#TODO (Leo) fix weekend_binary scale so that it makes sense, hide the x axis, legend with two colors
 
 #Hyp. #6: sentiment holiday = sentiment !holiday
 #Without stratifying on volume
@@ -295,45 +325,10 @@ t.test(holiday$score_date,not_holiday$score_date,var.equal = TRUE)
 fit <- lm(score_date ~ holiday + freq, data=mb_sentiment_holidays)
 summary(fit) # show results
 #There is no association between holiday and tweet sentiment WITH stratifying on volume.
-ggplot(mb_sentiment_holidays, aes(x=holiday, y=freq, group=holiday)) +
+ggplot(mb_sentiment_holidays, aes(x=holiday, y=score_date, group=holiday)) +
   geom_boxplot(aes(fill=holiday)) +
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
-
-#mb_sentiment_tweet_vol <- mb_sentiment_tweet %>% group_by(date2) %>% count(date2)
-#tweet_quartiles <- mb_sentiment_tweet_vol%>%
-#  summarise(`25%`=quantile(n, probs=0.25),
-#            `50%`=quantile(n, probs=0.5),
-#            `75%`=quantile(n, probs=0.75),
-#            avg=mean(n),
-#            n=n())
-#first_quartile <- tweet_quartiles[1][[1]]
-#second_quartile <- tweet_quartiles[1][[2]]
-#third_quartile <- tweet_quartiles[1][[3]]
-#mb_sentiment_tweet_vol$quartile <- 1
-#for(i in 1:nrow(mb_sentiment_tweet_vol)) {
-#  if(mb_sentiment_tweet_vol$n[i]>=third_quartile) {
-#    mb_sentiment_tweet_vol$quartile[i] <- 4
-#  } else if(mb_sentiment_tweet_vol$n[i]>second_quartile) {
-#    mb_sentiment_tweet_vol$quartile[i] <- 3
-#  } else if(mb_sentiment_tweet_vol$n[i]>first_quartile) {
-#    mb_sentiment_tweet_vol$quartile[i] <- 2
-#  } else {
-#    mb_sentiment_tweet_vol$quartile[i] <- 1
-#  }
-#}
-#mb_sentiment_tweet_quartiles <- left_join(mb_sentiment_tweet,mb_sentiment_tweet_vol,by="date2") %>% select(-n)
-#mb_sentiment_tweet_quartiles$quartile = factor(mb_sentiment_tweet_quartiles$quartile)
-#ggplot(mb_sentiment_tweet_quartiles, aes(x=quartile, y = score_tweet)) +
-#  geom_boxplot(fill = "grey80", colour = "blue") +
-#  scale_x_discrete() + xlab("Quartile") +
-#  ylab("Tweet score")
-#tweet_volume_model <- lm(score_tweet ~ quartile, data = mb_sentiment_tweet_quartiles)
-#summary(tweet_volume_model)
-
-
-
-
 
 
 
@@ -365,13 +360,14 @@ ggplot(mb_sentiment_holidays, aes(x=holiday, y=freq, group=holiday)) +
 #  mutate(score = positive - negative)
 
 # NEED TO FINISH: http://www.r-bloggers.com/sentiment-analysis-on-donald-trump-using-r-and-tableau/
-positives = bing_megabus %>%
+
+positives <- bing_megabus %>%
   filter(sentiment == "positive") %>%
-  select(word)
+  dplyr::select(word)
 
 negatives = bing_megabus %>%
   filter(sentiment == "negative") %>%
-  select(word)
+  dplyr::select(word)
 
 ## gganimate: by day (e.g., mondays)
 
@@ -390,14 +386,14 @@ library(SnowballC)
 library(wordcloud)
 library(RColorBrewer)
 
-View(by_word)
-word_list <- by_word %>% select(word)
+head(by_word)
+word_list <- by_word %>% dplyr::select(word)
 
 word_list_negatives <- subset(word_list, word %in% negatives$word)
-View(word_list_negatives)
+head(word_list_negatives)
 
 word_list_positives <- subset(word_list, word %in% positives$word)
-View(word_list_positives)
+head(word_list_positives)
 
 # 5 Easy Steps to a Word Cloud: http://www.sthda.com/english/wiki/text-mining-and-word-cloud-fundamentals-in-r-5-simple-steps-you-should-know#the-five-main-steps-for-creating-a-word-cloud-using-r-software
 
@@ -425,7 +421,7 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
 
 ##### Positive Word Cloud #####
 word_list_positives <- Corpus(VectorSource(word_list_positives))
-inspect(word_list_positives)
+#inspect(word_list_positives)
 
 toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
 word_list_positives <- tm_map(word_list_positives, toSpace, "/")
@@ -449,9 +445,9 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
 # Word Clouds by Weekend vs. Non-Weekend
 
 # Create Word List for Weekends
-View(by_word)
-word_list <- by_word %>% select(word, weekend_binary)
-View(word_list)
+head(by_word)
+word_list <- by_word %>% dplyr::select(word, weekend_binary)
+head(word_list)
 
 word_list <- subset(word_list, word %in% bing_megabus$word)
 word_list_weekend <- word_list %>%
@@ -460,12 +456,12 @@ word_list_weekend <- word_list %>%
 # Create Word List for Weekdays
 word_list_nonweekend <- word_list %>%
   filter(weekend_binary==0)
-View(word_list_nonweekend)
+head(word_list_nonweekend)
 
 # Word Cloud for Weekend
 
 word_list_weekend <- Corpus(VectorSource(word_list_weekend))
-inspect(word_list_weekend)
+#inspect(word_list_weekend)
 
 toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
 word_list_weekend <- tm_map(word_list_weekend, toSpace, "/")
@@ -515,18 +511,21 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
 
 # Word Cooccurence
 
-View(by_word)
-word_cooccurences <- by_word %>% select(word, id)
+head(by_word)
+word_cooccurences <- by_word %>% dplyr::select(word, id)
 word_cooccurences <- subset(word_cooccurences, word %in% bing_megabus$word)
 
 word_cooccurences <- word_cooccurences %>%
   pair_count(id, word, sort = TRUE)
 word_cooccurences
 
-install.packages("igraph")
+#install.packages("igraph")
+
 if(!require(devtools)) {
   install.packages('devtools')
 }
+library(devtools)
+#is it necessary to run the below line if library(ggplot2) has already been called? -Leo
 devtools::install_github('hadley/ggplot2')
 devtools::install_github('thomasp85/ggforce')
 devtools::install_github('thomasp85/ggraph')
