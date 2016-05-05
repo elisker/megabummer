@@ -252,9 +252,13 @@ We first tested the relationship between tweet volume and tweet sentiment. We ex
 #Hyp. #1: tweet sentiment on low volume days = on high volume days
 h1.lm <- lm(score_date ~ freq, data = mb_sentiment_date)
 summary(h1.lm)
-#REJECT THE NULL (STRONGLY), conclude that tweet sentiment on low volume days > tweet sentiment on high volume days
-# The volume of tweets on a given day is a statistically significant predictor of the average daily sentiment score and that for every additional tweet, we would expect a 0.001 decrease in average daily sentiment score.
+
 options(digits = 3)
+
+#REJECT THE NULL (p<0.001), conclude that tweet sentiment on low volume days > tweet sentiment on high volume days
+
+# The volume of tweets on a given day is a statistically significant predictor of the average daily sentiment score, and for every additional tweet, we would expect a 0.0014 decrease in average daily sentiment score.
+
 ggplot(data=mb_sentiment_date, aes(x=freq, y=score_date)) + 
   geom_line() + xlab("Number of megabus tweets") + 
   ylab("Tweet sentiment score") + 
@@ -264,22 +268,27 @@ options(digits = 22)
 #Commentary:
 #While we have found a highly statistically significant trend, the effect is moderate considering the degree of variance in tweet sentiment. In order to explore the meaning and practical application of the relationship, we would need to further examine days with different sentiments of tweets and consider whether the difference as measured by our scoring system is meaningful.
 
+#Test to ensure the two main assumptions of linear regression are met: 1.) Homoskedasticity and 2.) Zero Contiditional Mean (the expected value of the error(residual) for any value of X is 0) 
+
 score_date.res = resid(h1.lm)
 plot(mb_sentiment_date$freq, score_date.res, 
 ylab="Residuals", xlab="Number of Tweets", 
 main="Tweets and Megabus Sentiment")
 abline(0,0)
-#There is homoscadesticity of residuals, therefore linear regression is an appropriate method of analysis.
 
 ncvTest(h1.lm)
 # We fail to reject the null hypothesis of homoskedastic errors
 
-# Normality of Residuals
-#As demonstrated in the QQ-Plot below of the studendized residuals, the linearity of the points suggests that the residuals are normally distributed and further confirms that linear regression is appropriate for our dataset.
+#There is homoscadesticity (the variance in y is the same across all values of X), therefore linear regression may be an appropriate method of analysis.
+
+# Zero Conditional Mean and Normality of Residuals
+#As demonstrated in the QQ-Plot below of the studendized residuals, the linearity of the points suggests that the residuals are normally distributed with a mean of 0 and further confirms that linear regression is appropriate for our dataset.
 qqPlot(h1.lm, main="QQ Plot")
 
 # distribution of studentized residuals
 # We can also use a combination of a density plot and histogram to visualize that the normality assumption holds true as demonstrated below.
+
+library(MASS)
 
 sresid <- studres(h1.lm) 
 hist(sresid, freq=FALSE, 
@@ -289,20 +298,20 @@ yfit<-dnorm(xfit)
 lines(xfit, yfit)
 ```
 
-We then tested hypotheses about the relationship between average tweet sentiment and unit of time (day of the week, month of the year). We included frequency (volume) as a covariate since it has been established that there is a relationship between tweet volume and sentiment.
+We then tested hypotheses about the relationship between average daily tweet sentiment and unit of time (day of the week, month of the year). We included frequency (volume) as a covariate since it has been established that there is a relationship between tweet volume and sentiment.
 
 ```{r}
 #Hyp. 2: Sentiment ~ day of the week when stratifying on freq.
 fit <- lm(score_date ~ weekend + freq, data=mb_sentiment_date)
 summary(fit)
 
-#REJECT THE NULL, conclusion: The volume of tweets on a given day is a statistically significant predictor of the average daily sentiment score. For every additional tweet, we would expect a 0.001 decrease in average daily sentiment score. The days of the week are not significantly associated with the average daily sentiment score. 
+#REJECT THE NULL (p<0.001), conclusion: When stratifying on day of the week, the volume of tweets on a given day is a statistically significant predictor of the average daily sentiment score. For every additional tweet, we would expect a 0.001 decrease in average daily sentiment score. In this model, the days of the week are not statistically associated with the average daily sentiment score. 
 
 #Hyp. #2a: sentiment ~ month when stratifying on freq.
 fit <- lm(score_date ~ month + freq, data=mb_sentiment_date)
 summary(fit) # show results
 
-#REJECT THE NULL, conclusion: When we stratify on volume of tweets, we see that month is a statistically  significant predictor of the average daily sentiment score in some cases. The months of December, June, and October are statistically significantly associated with average daily sentiment score. Looking at the month of December, for example, December we would expect, on average, a 0.127 decrease in average daily sentiment for every additional tweet.
+#REJECT THE NULL, conclusion: When we stratify on volume of tweets in a given day, we see that month is a statistically  significant predictor of the average daily sentiment score in some cases. The months of December, June, and October are statistically significantly associated with average daily sentiment score. Looking at the month of December, for example, December we would expect, on average, a 0.127 decrease in average daily sentiment for every additional tweet.
 ```
 
 We then explored the relationship between weekend (Friday, Saturday, or Sunday) and tweet sentiment. First, we looked at the average tweet score for all tweets occurring on weekends vs. non-weekends. Then, we looked at the average of the daily tweet scores, each of which is the average sentiment for all tweets on that day. The first approach treats all tweets equally, while the second approach avoids overrepresenting days with many tweets, such as days when a significant event occurs.
@@ -314,7 +323,11 @@ not_the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 0)
 var.test(the_weekend$score_tweet,not_the_weekend$score_tweet)#variances are equal if p-value > 0.05
 t.test(the_weekend$score_tweet,not_the_weekend$score_tweet)#,var.equal = TRUE)
 #Conclusion: When looking at all weekend vs weekday tweet scores as comparing two large group, the mean tweet score on weekends is not significantly different than the mean tweet score on non-weekends, *without* stratifying on tweet volume.
+
 options(digits = 3) 
+
+# The following plot provides visual evidence that there is no discerable difference between tweet scores on weekdays vs. weekends.
+  
 ggplot(mb_sentiment_tweet, aes(x=weekend_binary, y=score_tweet, group=weekend_binary)) +
   geom_boxplot(aes(fill=weekend_binary)) +
   xlab("Non-weekend vs weekend") + 
@@ -648,3 +661,5 @@ We did not clearly identify a causal pathway for this association, but rather de
 It is entirely plausible that both of these effects are causing the association, or perhaps just one, or perhaps the association is by chance.
 
 To test these theories, we would need to obtain data on Megabus activity, perhaps by scraping a travel site. Then we could determine if tweet activity is primarily an indicator Megabus activity, or a downstream consequence of negative Megabus experiences, or both.
+
+Through our work, we hope to help people understand the trends in Megabus tweet sentiment so that they can make informed decisions and have the best Megabus experience possible!
