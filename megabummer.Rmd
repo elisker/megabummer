@@ -254,12 +254,13 @@ h1.lm <- lm(score_date ~ freq, data = mb_sentiment_date)
 summary(h1.lm)
 #REJECT THE NULL (STRONGLY), conclude that tweet sentiment on low volume days > tweet sentiment on high volume days
 # The volume of tweets on a given day is a statistically significant predictor of the average daily sentiment score and that for every additional tweet, we would expect a 0.001 decrease in average daily sentiment score.
-
+options(digits = 3)
 ggplot(data=mb_sentiment_date, aes(x=freq, y=score_date)) + 
   geom_line() + xlab("Number of megabus tweets") + 
   ylab("Tweet sentiment score") + 
   ggtitle("Tweet sentiment as a function of tweet volume") + 
   theme_hc()
+options(digits = 22)
 #Commentary:
 #While we have found a highly statistically significant trend, the effect is moderate considering the degree of variance in tweet sentiment. In order to explore the meaning and practical application of the relationship, we would need to further examine days with different sentiments of tweets and consider whether the difference as measured by our scoring system is meaningful.
 
@@ -313,15 +314,15 @@ not_the_weekend = mb_sentiment_tweet %>% filter(weekend_binary == 0)
 var.test(the_weekend$score_tweet,not_the_weekend$score_tweet)#variances are equal if p-value > 0.05
 t.test(the_weekend$score_tweet,not_the_weekend$score_tweet)#,var.equal = TRUE)
 #Conclusion: When looking at all weekend vs weekday tweet scores as comparing two large group, the mean tweet score on weekends is not significantly different than the mean tweet score on non-weekends, *without* stratifying on tweet volume.
-
+options(digits = 3) 
 ggplot(mb_sentiment_tweet, aes(x=weekend_binary, y=score_tweet, group=weekend_binary)) +
   geom_boxplot(aes(fill=weekend_binary)) +
   xlab("Non-weekend vs weekend") + 
   ylab("Tweet sentiment score") + 
-  ggtitle("Variation in tweet sentiment between weekends and non-weekends") + 
+  ggtitle("Variation in tweet sentiment, weekends v non-weekends") + 
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
-
+options(digits = 22) 
 #Hyp. #3b: sentiment weekend = sentiment weekday (each weekend day is weighted equally, without regard for tweet volume on that day)
 the_weekend_date = mb_sentiment_date %>% filter(weekend_binary == 1)
 not_the_weekend_date = mb_sentiment_date %>% filter(weekend_binary == 0)
@@ -384,6 +385,7 @@ fit <- lm(score_date ~ holiday + freq, data=mb_sentiment_holidays)
 summary(fit) # show results
 #When we stratify on tweet volume, we still see that there is no statistically significant association between holiday and tweet sentiment.
 #echart
+options(digits = 3) 
 ggplot(mb_sentiment_holidays, aes(x=holiday, y=score_date, group=holiday)) +
   geom_boxplot(aes(fill=holiday)) +
   xlab("Non-holiday vs. holiday") + 
@@ -391,7 +393,7 @@ ggplot(mb_sentiment_holidays, aes(x=holiday, y=score_date, group=holiday)) +
   ggtitle("Variation in tweet sentiment score between holidays and non-holidays") + 
   geom_jitter(colour="gray40",
               position=position_jitter(width=0.2), alpha=0.3) 
-
+options(digits = 22) 
 
 
 ```
@@ -436,7 +438,7 @@ head(d, 10)
 # Word Cloud (Negative)
 set.seed(1234)
 wordcloud(words = d$word, freq = d$freq, min.freq = 1,
-          max.words=150, random.order=FALSE, scale=c(4,.2), rot.per=0.35, 
+          max.words=125, random.order=FALSE, scale=c(4,0.5), rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 
 ##### Positive Word Cloud #####
@@ -459,12 +461,13 @@ head(d, 10)
 # Word Cloud (Positive)
 set.seed(1234)
 wordcloud(words = d$word, freq = d$freq, min.freq = 1,
-          max.words=150, random.order=FALSE, rot.per=0.35, scale=c(4,.2), 
+          max.words=125, random.order=FALSE, rot.per=0.35, scale=c(4,0.5), 
           colors=brewer.pal(8, "Dark2"))
 ```
 
 Those outlying days, where everyone was tweeting a lot? Now we're ready to see what some of that tweeting was all about.
 
+###Word clouds about news articles on days with high tweet volume
 [*April 13, 2015: 19 injured in Megabus crash on I-65 in Indiana*](http://www.usatoday.com/story/news/nation/2015/04/13/megabus-crash-indiana/25707085/)
 
 ```{r}
@@ -499,7 +502,7 @@ d <- data.frame(word = names(v),freq=v)
 # Word Cloud (Date)
 set.seed(1234)
 wordcloud(words = d$word, freq = d$freq, min.freq = 1,
-          max.words=150, random.order=FALSE, scale=c(4,.2), rot.per=0.35, 
+          max.words=125, random.order=FALSE, scale=c(6,0.5), rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 ```
 
@@ -535,7 +538,7 @@ d <- data.frame(word = names(v),freq=v)
 # Word Cloud (Date)
 set.seed(1234)
 wordcloud(words = d$word, freq = d$freq, min.freq = 1,
-          max.words=150, random.order=FALSE, scale=c(4,.2), rot.per=0.35, 
+          max.words=125, random.order=FALSE, scale=c(4,0.5), rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 ```
 
@@ -572,7 +575,7 @@ d <- data.frame(word = names(v),freq=v)
 # Word Cloud (Date)
 set.seed(1234)
 wordcloud(words = d$word, freq = d$freq, min.freq = 1,
-          max.words=150, random.order=FALSE, scale=c(4,.2), rot.per=0.35, 
+          max.words=125, random.order=FALSE, scale=c(5,0.5), rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 ```
 
@@ -608,7 +611,7 @@ d <- data.frame(word = names(v),freq=v)
 # Word Cloud (Date)
 set.seed(1234)
 wordcloud(words = d$word, freq = d$freq, min.freq = 1,
-          max.words=150, random.order=FALSE, scale=c(4,.2), rot.per=0.35, 
+          max.words=125, random.order=FALSE, scale=c(3,0.5), rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 ```
 
