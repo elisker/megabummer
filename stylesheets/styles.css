@@ -322,3 +322,6 @@ footer {
     color:#444;
   }
 }
+#menu {
+  list-style-type:none;
+}
