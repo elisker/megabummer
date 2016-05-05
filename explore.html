@@ -40,8 +40,23 @@
         <li><a href="/megabummer/fin">Finale</a></li>
       </ul>
         <h3>
-<a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Explore.</h3>
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here <a href="https://guides.github.com/features/mastering-markdown/">using GitHub Flavored Markdown</a>, select a template crafted by a designer, and publish. After your page is generated, you can check out the new <code>gh-pages</code> branch locally. If you’re using GitHub Desktop, simply sync your repository and you’ll see the new branch.</p>
+<a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>
+<h3>Exploratory Analysis</h3>
+<h4>Histogram of number of tweets per user</h4>
+<img src="images/hist_num_tweets.png">
+<h4>Histogram of number of tweets, for users with more than 8 tweets so that we can get a closer look at the more prolific tweeters</h4>
+<img src="images/hist_num_tweets2.png">
+<h4>Tweets per day</h4>
+<img src="images/tweets_per_day.png">
+<p>We noticed that some days had far more tweets than other days! For example, there were many tweets on Valentine's day. In our <a href="/megabummer/viz">Visualizations</a> section, we look in more detail at days with high tweet volume.</p>
+
+<h4>Sentiment Analysis</h4>
+
+<p>Like most sentiment analyses, we relied on a lexicon of positive and negative words. We started with the Bing lexicon in the tidytext package in the sentiment dataset (<a href="https://www.cs.uic.edu/~liub/" target="_blank">described here</a> in more detail). This lexicon has been compiled over the past 12 years by researchers at the University of Illinois at Chicago.</p>
+
+<p>After initial review of the Bing lexicon, we realized that we need to supplement the list of positive and negative words in order to capture the extent of Megabus transportation-specific sentiments. We added a total of 57 sentiments associated with Megabus and transportation experience. These additional negative and positive words were identified by manually reviewing a random sample from 2900 tweets containing the keyword, “megabus” queried on 4/20/2016, following methods <a href="http://www.wired.com/2015/02/best-worst-public-transit-systems-according-twitter/" target="_blank">similar to those described here</a>. This review, comparing the Bing lexicon with Megabus tweets, also revealed that a few sentiments already existing in the Bing lexicon needed to be recorded or removed. These included: changing “uneventful” from negative to positive, reversing “cheap” from negative to positive given Megabus’s platform as a cheap transportation provider, and the removal of “like” which could be positive or negative and is probaby slang.</p>
+<p>The describe() function in <a href="https://cran.r-project.org/web/packages/Hmisc/index.html" target="_blank">Hmisc</a> helped us see how tweet sentiment scores are distributed. In particular, we noticed that the distribution of by tweet sentiment scores was similar to the distribution of by date sentiment scores (the average sentiment score for that day). We therefore focused our analysis on the by date sentiment scores because it was a convenient bin for looking at trends over time and for moderating the considerable variance. The by date sentiment score gives a sense for the overall level of sentiment on any given day, which is what we ultimately decided to consider as our main outcome.</p>
+
 
       </section>
       <footer>
