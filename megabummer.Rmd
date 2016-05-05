@@ -141,11 +141,115 @@ tweets_df_all %>% group_by(date2) %>% count(date2, sort = TRUE) %>% filter(n<100
 
 On each of the outlying days for high tweet volume, there were significant news stories about Megabus.
 
-[*April 13, 2015: ‘Hero’ passenger subdues gunman who may have tried to take over Megabus*](https://www.washingtonpost.com/news/morning-mix/wp/2015/05/13/hero-passenger-subdues-gunman-who-may-have-tried-to-take-over-megabus/)
+[*April 13, 2015: 19 injured in Megabus crash on I-65 in Indiana*](http://www.usatoday.com/story/news/nation/2015/04/13/megabus-crash-indiana/25707085/)
 
-[*May 13, 2015: 19 injured in Megabus crash on I-65 in Indiana*](http://www.usatoday.com/story/news/nation/2015/04/13/megabus-crash-indiana/25707085/)
+```{r}
+by_word <- tweets_df_all %>%
+  dplyr::select(text, id, date, date2, time, weekend, weekend_binary, month) %>%
+  unnest_tokens(word, text) 
+
+word_list <- by_word %>% dplyr::select(word, date2)
+
+word_list <- subset(word_list, word %in% bing_megabus$word)
+word_list_date <- word_list %>%
+  filter(date2=="04-13-15")
+word_list_date <- word_list_date %>% dplyr::select(word)
+
+word_list_date <- Corpus(VectorSource(word_list_date))
+#inspect(word_list_date)
+
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_date <- tm_map(word_list_date, toSpace, "/")
+word_list_date <- tm_map(word_list_date, toSpace, "@")
+word_list_date <- tm_map(word_list_date, toSpace, "\\|")
+word_list_date <- tm_map(word_list_date, removeWords, c("megabus", "the", "and", "https", "you", "t.co", "for", "this", "bus", "that")) 
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_date)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+
+
+# Word Cloud (Date)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+[*May 13, 2015: ‘Hero’ passenger subdues gunman who may have tried to take over Megabus*](https://www.washingtonpost.com/news/morning-mix/wp/2015/05/13/hero-passenger-subdues-gunman-who-may-have-tried-to-take-over-megabus/)
+```{r}
+by_word <- tweets_df_all %>%
+  dplyr::select(text, id, date, date2, time, weekend, weekend_binary, month) %>%
+  unnest_tokens(word, text) 
+
+word_list <- by_word %>% dplyr::select(word, date2)
+
+word_list <- subset(word_list, word %in% bing_megabus$word)
+word_list_date <- word_list %>%
+  filter(date2=="05-13-15")
+word_list_date <- word_list_date %>% dplyr::select(word)
+
+word_list_date <- Corpus(VectorSource(word_list_date))
+#inspect(word_list_date)
+
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_date <- tm_map(word_list_date, toSpace, "/")
+word_list_date <- tm_map(word_list_date, toSpace, "@")
+word_list_date <- tm_map(word_list_date, toSpace, "\\|")
+word_list_date <- tm_map(word_list_date, removeWords, c("megabus", "the", "and", "https", "you", "t.co", "for", "this", "bus", "that")) 
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_date)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+d
+
+# Word Cloud (Date)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
 
 [*February 21, 2016: The Day My Megabus Caught Fire*](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=newssearch&cd=1&ved=0ahUKEwjw6rqk18DMAhWLbT4KHacICLYQqQIIHCgAMAA&url=http%3A%2F%2Fwww.nytimes.com%2F2016%2F02%2F22%2Ftravel%2Fthe-day-my-megabus-caught-fire.html&usg=AFQjCNGn4yumdmj3dXBvebbspQf6saQwBw&sig2=x1ans1gQL3jwUhE4p5FEEg)
+
+```{r}
+by_word <- tweets_df_all %>%
+  dplyr::select(text, id, date, date2, time, weekend, weekend_binary, month) %>%
+  unnest_tokens(word, text) 
+
+word_list <- by_word %>% dplyr::select(word, date2)
+
+word_list <- subset(word_list, word %in% bing_megabus$word)
+word_list_date <- word_list %>%
+  filter(date2=="02-21-16")
+word_list_date <- word_list_date %>% dplyr::select(word)
+
+word_list_date <- Corpus(VectorSource(word_list_date))
+#inspect(word_list_date)
+
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+word_list_date <- tm_map(word_list_date, toSpace, "/")
+word_list_date <- tm_map(word_list_date, toSpace, "@")
+word_list_date <- tm_map(word_list_date, toSpace, "\\|")
+word_list_date <- tm_map(word_list_date, removeWords, c("megabus", "the", "and", "https", "you", "t.co", "for", "this", "bus", "that")) 
+
+#Build a term-document matrix
+dtm <- TermDocumentMatrix(word_list_date)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+
+
+# Word Cloud (Date)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
 
 
 
@@ -155,9 +259,6 @@ Like most sentiment analyses, we relied on a lexicon of positive and negative wo
 After initial review of the Bing lexicon, we realized that we need to supplement the list of positive and negative words in order to capture the extent of Megabus transportation-specific sentiments. We added a total of 57 sentiment related to Megabus and transportation experience. These additional negative and positive words were identified  by manually reviewing a random sample from 2900 tweets containing the keyword, "megabus" queried on 4/20/2016, following methods similar to those described here: http://www.wired.com/2015/02/best-worst-public-transit-systems-according-twitter/. This review comparing the Bing lexicon with Megabus tweets also revealed that a few sentiments already in the lexicon needed to be recorded or removed. These included: changing "uneventful" from negative to positive, reversing "cheap" from negative to positive given Megabus's platform as a cheap transportation provider, and the removal of "like" which could be positive or negative and is probaby slang.
 
 ```{r}
-by_word <- tweets_df_all %>%
-  dplyr::select(text, id, date, date2, time, weekend, weekend_binary, month) %>%
-  unnest_tokens(word, text) 
 
 # look at most commonly tweeted words
 by_word_count <- by_word %>%
