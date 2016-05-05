@@ -41,7 +41,15 @@
       </ul>
         <h3>
 <a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Statistical Tests.</h3>
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here <a href="https://guides.github.com/features/mastering-markdown/">using GitHub Flavored Markdown</a>, select a template crafted by a designer, and publish. After your page is generated, you can check out the new <code>gh-pages</code> branch locally. If you’re using GitHub Desktop, simply sync your repository and you’ll see the new branch.</p>
+
+<h4>Hypothesis Testing</h4>
+
+<p>We first tested the relationship between tweet volume and tweet sentiment. We expected there to be a correlation, and there was. A linear regression was appropriate for this because while we are uncertain about causality (and indeed, causality may not even be consistent), we had reason to believe that there was a relationship between tweet volume and sentiment, both based on our data exploration.</p>
+
+<p>We rejected the null with a p-value of less than 0.001, concluding that tweet sentiment on low volume days is greater than tweet sentiment on high volume days. The volume of tweets on a given day is a statistically significant predictor of the average daily sentiment score, and for every additional tweet, we would expect a 0.0014 decrease in average daily sentiment score. While there is much variation day to day, the following chart clearly aligns with our finding that on days with higher tweet volume, sentiment score is lower.
+</p>
+<img src="images/sentimentbyvolume.png">
+
 
       </section>
       <footer>
