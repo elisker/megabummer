@@ -64,14 +64,16 @@ With weekend days weighted by tweet volume, using a Welch two-sample t-test, we 
 <img src="images/varweekend2.png">
 <p>
 Again using a Welch two-sample t-test, we concluded that the mean of daily tweet scores on weekends is significantly less (p = 0.0017) than the mean tweet score on non-weekends, *without* stratifying on tweet volume.</p>
+
 <p>We then pursued the association between average sentiment score for tweet-days and weekend status. We performed a multiple linear regression examining the relationship of weekend status and tweet sentiment with tweet volume as a covariate. Tweet volume emerged as a strong predictor of tweet sentiment, while weekend was not a significant predictor.</p>
 <p>
 One of our earliest hypotheses was that tweeting would increase on weekends. We conducted a t-test to test this hypothesis.</p>
 <p>
-We rejected the null and, conclude that tweet volume on weekends is statistically differrent thantweet volume on weekdays. 
+We rejected the null (p value 3.12e-9) and concluded that tweet volume on weekends is statistically different than tweet volume on weekdays. 
 </p>
-
-
+<img src="images/tweet_volume_weekend.png">
+<p>
+We also conducted a t-test to test the hypothesis that tweet sentiment would be significantly different on holidays (federal holidays, Valentine’s Day, and Halloween). This test was inspired by an early observation that there appeared to be many more tweets on Valentine’s Day than on an average mid-February day. (More on that in our <a href="/megabummer/viz">visualizations</a> section.)</p>
 
       </section>
       <footer>
