@@ -51,7 +51,28 @@
 <img src="images/sentimentbyvolume.png">
 
 <p>We then explored the relationship between weekend (Friday, Saturday, or Sunday) and tweet sentiment. First, we looked at the average tweet score for all tweets occurring on weekends vs. non-weekends. Then, we looked at the average of the daily tweet scores, each of which is the average sentiment for all tweets on that day. The first approach treats all tweets equally, while the second approach avoids overrepresenting days with many tweets, such as days when a significant event occurs.</p>
+We examined weekends with weekend day weighted by tweet volume:
 <img src="images/varweekend.png">
+<p>
+When looking at all weekend vs weekday tweet scores as comparing two large group, with each day weighted by tweet volume, using a Welch two-sample t-test, the mean tweet score on weekends is not significantly different (p = 0.13) than the mean tweet score on non-weekends.
+</p>
+<p>
+With weekend days weighted by tweet volume, using a Welch two-sample t-test, we concluded that the mean of daily tweet scores on weekends is significantly less than the mean tweet score on non-weekends, *without* stratifying on tweet volume.
+</p>
+<p>We also examined weekends with each weekend day not weighted by tweet volume. 
+</p>
+<img src="images/varweekend2.png">
+<p>
+Again using a Welch two-sample t-test, we concluded that the mean of daily tweet scores on weekends is significantly less (p = 0.0017) than the mean tweet score on non-weekends, *without* stratifying on tweet volume.</p>
+<p>We then pursued the association between average sentiment score for tweet-days and weekend status. We performed a multiple linear regression examining the relationship of weekend status and tweet sentiment with tweet volume as a covariate. Tweet volume emerged as a strong predictor of tweet sentiment, while weekend was not a significant predictor.</p>
+<p>
+One of our earliest hypotheses was that tweeting would increase on weekends. We conducted a t-test to test this hypothesis.</p>
+<p>
+We rejected the null and, conclude that tweet volume on weekends is statistically differrent thantweet volume on weekdays. 
+</p>
+
+
+
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/leoebrown">leoebrown</a></p>
